@@ -124,32 +124,10 @@ const total = drinkTotal + bagTotal;
       <meta name="viewport" content="width=device-width,initial-scale=1">
       <title>訂單管理</title>
       <style>
-      @media (max-width: 700px) {
-  main {
-    max-width: none;
-    margin: 20px 0;
-    padding: 0 12px;
-  }
-
-  h1 {
-    font-size: 24px;
-    white-space: nowrap;
-    margin: 10px 0 20px;
-  }
-
-  table {
-    width: 100%;
-    min-width: 0;
-    table-layout: fixed;
-  }
-
-  th,
-  td {
-    padding: 12px 8px;
-    font-size: 14px;
-    word-break: break-word;
-  }
-}
+   body{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif;margin:0;background:#f5f6f8;color:#2b211d}
+      main{max-width:1400px;margin:30px auto;padding:0 20px}h1{color:#8f2f27;font-size:28px;margin-bottom:24px}
+      table{width:100%;min-width:850px;border-collapse:collapse;background:white;border-radius:16px;overflow:hidden}
+      th,td{padding:16px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}th{background:#eee4d8}
       </style><main><h1>藥師的私房紅茶｜訂單</h1><table><thead><tr>
       <th>訂單</th><th>時間</th><th>客人</th><th>內容</th><th>總額</th>
       </tr></thead><tbody>${rows || "<tr><td colspan=5>目前沒有訂單</td></tr>"}</tbody></table></main>`;
