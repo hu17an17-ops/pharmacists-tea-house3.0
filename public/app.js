@@ -77,7 +77,8 @@ qs("#closeCart").onclick=()=>qs("#cartDialog").close();
 qs("#orderForm").onsubmit=async e=>{
   e.preventDefault();
   if(!cart.length) return toast("請先選擇商品");
-  const form=new FormData(e.currentTarget);
+const formElement=e.currentTarget;
+const form=new FormData(formElement);
   const payload={
     customer:{name:form.get("name"),phone:form.get("phone"),note:form.get("note")},
     items:cart.map(({id,name,price,quantity,sweetness,ice})=>({id,name,price,quantity,sweetness,ice}))
@@ -89,7 +90,7 @@ qs("#orderForm").onsubmit=async e=>{
     if(!r.ok) throw new Error(data.message||"送出失敗");
     result.className="success";
     result.innerHTML=`訂單已送出！<br><strong>訂單編號：${data.orderId}</strong><br>合計 $${data.total}，請到店取餐並現場付款。`;
-    cart.length=0;updateCart();e.currentTarget.reset();renderCart();
+    cart.length=0;updateCart();formElement.reset();renderCart();
   }catch(err){result.className="error";result.textContent=err.message}
 };
 
