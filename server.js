@@ -154,7 +154,7 @@ async function sendNtfyOrderNotification(order) {
 
         headers: {
           "Content-Type": "text/plain; charset=utf-8",
-          "Title": "🔔 藥師的私房紅茶｜新訂單",
+          "Title": "New Order",
           "Priority": "5",
           "Tags": "bell"
         },
