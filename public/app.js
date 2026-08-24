@@ -93,5 +93,18 @@ const form=new FormData(formElement);
     cart.length=0;updateCart();formElement.reset();renderCart();
   }catch(err){result.className="error";result.textContent=err.message}
 };
+let bag1Count = 0;
+let bag2Count = 0;
 
+function changeBag(type, amount) {
+  if (type === "bag1") {
+    bag1Count = Math.max(0, bag1Count + amount);
+    document.querySelector("#bag1Count").textContent = bag1Count;
+  }
+
+  if (type === "bag2") {
+    bag2Count = Math.max(0, bag2Count + amount);
+    document.querySelector("#bag2Count").textContent = bag2Count;
+  }
+}
 render();
