@@ -58,8 +58,8 @@ function renderCart(){
     <strong>${x.name}</strong>　${money(x.price)}
     <div class="cart-controls">
       <button data-minus="${i}">−</button><span>${x.quantity}</span><button data-plus="${i}">＋</button>
-      <select data-sweet="${i}">${["甜度 S.","無糖","一分","三分","五分","八分","十分"].map(v=>`<option ${x.sweetness===v?"selected":""}>${v}</option>`).join("")}</select>
-      <select data-ice="${i}">${["冰度 I.","去冰","微冰","少冰","正常冰"].map(v=>`<option ${x.ice===v?"selected":""}>${v}</option>`).join("")}</select>
+      <select data-sweet="${i}">${["無糖","一分","三分","五分","八分","十分"].map(v=>`<option ${x.sweetness===v?"selected":""}>${v}</option>`).join("")}</select>
+      <select data-ice="${i}">${["去冰","微冰","少冰","正常冰"].map(v=>`<option ${x.ice===v?"selected":""}>${v}</option>`).join("")}</select>
     </div>
   </div>`).join("");
   qs("#cartTotal").textContent=money(cart.reduce((s,x)=>s+x.price*x.quantity,0));
