@@ -86,7 +86,7 @@ const drinkTotal = items.reduce(
 const total = drinkTotal + bagTotal;
       const order = {
         id: `T${Date.now().toString(36).toUpperCase()}${crypto.randomBytes(2).toString("hex").toUpperCase()}`,
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
         status: "new",
         customer: {
           name: String(customer.name).trim().slice(0, 50),
