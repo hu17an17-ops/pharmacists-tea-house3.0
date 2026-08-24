@@ -108,4 +108,4 @@ function changeBag(type, amount) {
     document.querySelector("#bag2Count").textContent = bag2Count;
   }
 }
-render();
+renderCart();
