@@ -66,6 +66,12 @@
     <form id="orderForm">
       <label>姓名<input name="name" required maxlength="50" placeholder="請輸入姓名"></label>
       <label>電話<input name="phone" required maxlength="30" inputmode="tel" placeholder="請輸入手機或電話"></label>
+      <label>購物袋
+  <select name="bag">
+    <option value="0">不需要</option>
+    <option value="1">需要購物袋</option>
+  </select>
+</label>
       <label>備註<textarea name="note" maxlength="300" placeholder="例如：統編、購物袋、到店時間、其他需求"></textarea></label>
       <button class="submit" type="submit">送出訂單</button>
     </form>
