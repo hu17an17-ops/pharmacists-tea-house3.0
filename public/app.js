@@ -107,6 +107,7 @@ function changeBag(type, amount) {
     bag2Count = Math.max(0, bag2Count + amount);
     document.querySelector("#bag2Count").textContent = bag2Count;
   }
+  renderCart();
 }
 render();
 
