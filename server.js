@@ -15,6 +15,11 @@ if (!fs.existsSync(ORDERS_FILE)) {
   fs.writeFileSync(ORDERS_FILE, "[]", "utf8");
 }
 
+
+/* =========================================================
+   訂單資料
+   ========================================================= */
+
 function readOrders() {
   try {
     return JSON.parse(
@@ -25,6 +30,7 @@ function readOrders() {
   }
 }
 
+
 function writeOrders(orders) {
   fs.writeFileSync(
     ORDERS_FILE,
@@ -32,6 +38,11 @@ function writeOrders(orders) {
     "utf8"
   );
 }
+
+
+/* =========================================================
+   HTTP 回應
+   ========================================================= */
 
 function send(
   res,
@@ -52,9 +63,16 @@ function send(
   );
 }
 
+
+/* =========================================================
+   靜態檔案
+   ========================================================= */
+
 function safeFilePath(urlPath) {
   const decoded = decodeURIComponent(
-    urlPath === "/" ? "/index.html" : urlPath
+    urlPath === "/"
+      ? "/index.html"
+      : urlPath
   );
 
   const file = path.normalize(
@@ -65,6 +83,11 @@ function safeFilePath(urlPath) {
     ? file
     : null;
 }
+
+
+/* =========================================================
+   讀取 POST JSON
+   ========================================================= */
 
 function parseBody(req) {
   return new Promise((resolve, reject) => {
@@ -80,9 +103,11 @@ function parseBody(req) {
 
     req.on("end", () => {
       try {
-        resolve(JSON.parse(raw || "{}"));
-      } catch (e) {
-        reject(e);
+        resolve(
+          JSON.parse(raw || "{}")
+        );
+      } catch (error) {
+        reject(error);
       }
     });
 
@@ -92,235 +117,163 @@ function parseBody(req) {
 
 
 /* =========================================================
-   Telegram 訂單通知
+   Telegram API
    ========================================================= */
 
-async function getTelegramChatId() {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
+async function telegramApi(
+  method,
+  body = {}
+) {
+  const token = String(
+    process.env.TELEGRAM_BOT_TOKEN || ""
+  ).trim();
 
   if (!token) {
-    console.warn(
-      "Telegram 未設定：請在 Render Environment Variables 設定 TELEGRAM_BOT_TOKEN"
+    throw new Error(
+      "沒有設定 TELEGRAM_BOT_TOKEN"
     );
-
-    return null;
   }
 
-  try {
-    const response = await fetch(
-      `https://api.telegram.org/bot${token}/getUpdates`
+  const response = await fetch(
+    `https://api.telegram.org/bot${token}/${method}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok || !data.ok) {
+    throw new Error(
+      `Telegram API ${response.status}: ${
+        data.description || "Unknown error"
+      }`
     );
-
-    if (!response.ok) {
-      const detail = await response.text();
-
-      throw new Error(
-        `Telegram getUpdates 失敗 ${response.status}: ${detail}`
-      );
-    }
-
-    const data = await response.json();
-
-    if (!data.ok || !Array.isArray(data.result)) {
-      console.warn(
-        "Telegram 沒有取得更新資料"
-      );
-
-      return null;
-    }
-
-    /*
-     * 從最近收到的訊息找 chat.id
-     */
-    for (let i = data.result.length - 1; i >= 0; i--) {
-      const update = data.result[i];
-
-      if (
-        update.message &&
-        update.message.chat &&
-        update.message.chat.id
-      ) {
-        return update.message.chat.id;
-      }
-
-      if (
-        update.edited_message &&
-        update.edited_message.chat &&
-        update.edited_message.chat.id
-      ) {
-        return update.edited_message.chat.id;
-      }
-    }
-
-    return null;
-
-  } catch (error) {
-    console.error(
-      "取得 Telegram Chat ID 失敗：",
-      error.message
-    );
-
-    return null;
   }
+
+  return data.result;
 }
 
 
+/* =========================================================
+   發送 Telegram 訂單通知
+   ========================================================= */
+
 async function sendTelegramOrderNotification(order) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
 
-  if (!token) {
-    console.warn(
-      "Telegram 通知未設定：請在 Render Environment Variables 設定 TELEGRAM_BOT_TOKEN"
-    );
-
-    return false;
-  }
-
-  /*
-   * 自動尋找你傳給 Bot 的 Chat ID
-   */
-  const chatId = await getTelegramChatId();
+  const chatId = String(
+    process.env.TELEGRAM_CHAT_ID || ""
+  ).trim();
 
   if (!chatId) {
-    console.warn(
-      "找不到 Telegram Chat ID。請先在 Telegram 對你的 Bot 按 /start，再傳一則測試訊息。"
+    throw new Error(
+      "沒有設定 TELEGRAM_CHAT_ID"
     );
-
-    return false;
   }
+
 
   const lines = [
-    "🔔 新訂單！",
+    "🔔 新訂單通知",
     "",
-    `訂單：${order.id}`,
-    `客人：${order.customer.name}`,
-    `電話：${order.customer.phone}`
+    `訂單編號：${order.id}`,
+    `姓名：${order.customer.name}`,
+    `電話：${order.customer.phone}`,
+    "",
+    "【訂購內容】"
   ];
 
-  /*
-   * 訂購內容
-   */
-  if (
-    Array.isArray(order.items) &&
-    order.items.length > 0
-  ) {
-    lines.push("");
-    lines.push("【訂購內容】");
 
-    for (const item of order.items) {
-      const name =
-        String(item.name || "").trim();
+  /* =======================================================
+     訂購內容
+     ======================================================= */
 
-      const quantity =
-        Number(item.quantity || 0);
+  for (const item of order.items || []) {
 
-      const sweetness =
-        String(
-          item.sweetness || ""
-        ).trim();
+    const name =
+      String(item.name || "").trim();
 
-      const ice =
-        String(
-          item.ice || ""
-        ).trim();
+    const quantity =
+      Number(item.quantity || 0);
 
-      let itemLine =
-        `${name} × ${quantity}`;
+    let text =
+      `${name} × ${quantity}`;
 
-      /*
-       * 只有真的有甜度／冰塊才顯示
-       */
-      if (sweetness || ice) {
-        const options = [];
 
-        if (sweetness) {
-          options.push(`甜度：${sweetness}`);
-        }
+    /* 只有真的有甜度才顯示 */
 
-        if (ice) {
-          options.push(`冰塊：${ice}`);
-        }
+    const sweetness =
+      String(item.sweetness || "").trim();
 
-        itemLine +=
-          `（${options.join("／")}）`;
-      }
-
-      lines.push(itemLine);
+    if (sweetness) {
+      text += `｜甜度：${sweetness}`;
     }
+
+
+    /* 只有真的有冰塊才顯示 */
+
+    const ice =
+      String(item.ice || "").trim();
+
+    if (ice) {
+      text += `｜冰塊：${ice}`;
+    }
+
+
+    lines.push(text);
   }
 
-  /*
-   * 故意不顯示：
-   * 統編
-   * 購物袋
-   * 到店
-   * 備註
-   */
+
+  /* =======================================================
+     備註
+     ======================================================= */
+
+  const note =
+    String(
+      order.customer.note || ""
+    ).trim();
+
+  if (note) {
+    lines.push("");
+    lines.push(`備註：${note}`);
+  }
+
+
+  /* =======================================================
+     總金額
+     ======================================================= */
 
   lines.push("");
-  lines.push(`合計：$${order.total}`);
-  lines.push("請到店取餐・現場付款");
+  lines.push(
+    `💰 合計：$${order.total}`
+  );
+
 
   const message =
     lines.join("\n").slice(0, 4000);
 
-  try {
-    const response = await fetch(
-      `https://api.telegram.org/bot${token}/sendMessage`,
-      {
-        method: "POST",
 
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
+  /* =======================================================
+     直接送 Telegram
+     ======================================================= */
 
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: message,
-
-          /*
-           * false = 正常通知
-           * 不使用 silent notification
-           */
-          disable_notification: false
-        })
-      }
-    );
-
-    if (!response.ok) {
-      const detail =
-        await response.text();
-
-      throw new Error(
-        `Telegram Push 失敗 ${response.status}: ${detail}`
-      );
+  await telegramApi(
+    "sendMessage",
+    {
+      chat_id: chatId,
+      text: message
     }
+  );
 
-    const result =
-      await response.json();
 
-    if (!result.ok) {
-      throw new Error(
-        result.description ||
-        "Telegram API 錯誤"
-      );
-    }
+  console.log(
+    `✅ Telegram 通知成功：${order.id}`
+  );
 
-    console.log(
-      `Telegram 訂單通知已送出：${order.id}`
-    );
-
-    return true;
-
-  } catch (error) {
-    console.error(
-      "Telegram 通知錯誤：",
-      error.message
-    );
-
-    return false;
-  }
+  return true;
 }
 
 
@@ -333,7 +286,9 @@ const server = http.createServer(
 
     const url = new URL(
       req.url,
-      `http://${req.headers.host || "localhost"}`
+      `http://${
+        req.headers.host || "localhost"
+      }`
     );
 
 
@@ -342,6 +297,7 @@ const server = http.createServer(
        ===================================================== */
 
     if (req.method === "OPTIONS") {
+
       res.writeHead(204, {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods":
@@ -362,6 +318,7 @@ const server = http.createServer(
       req.method === "GET" &&
       url.pathname === "/api/health"
     ) {
+
       return send(
         res,
         200,
@@ -406,6 +363,7 @@ const server = http.createServer(
           !customer.phone ||
           items.length === 0
         ) {
+
           return send(
             res,
             400,
@@ -419,20 +377,25 @@ const server = http.createServer(
 
 
         /* =================================================
-           購物袋計算
+           購物袋
            ================================================= */
 
         const bag1Count =
           Math.max(
             0,
-            Number(body.bag1Count || 0)
+            Number(
+              body.bag1Count || 0
+            )
           );
 
         const bag2Count =
           Math.max(
             0,
-            Number(body.bag2Count || 0)
+            Number(
+              body.bag2Count || 0
+            )
           );
+
 
         const bagTotal =
           bag1Count * 1 +
@@ -445,17 +408,25 @@ const server = http.createServer(
 
         const drinkTotal =
           items.reduce(
-            (sum, item) =>
-              sum +
-              Number(item.price || 0) *
-              Number(item.quantity || 0),
+            (sum, item) => {
+
+              return (
+                sum +
+                Number(
+                  item.price || 0
+                ) *
+                Number(
+                  item.quantity || 0
+                )
+              );
+
+            },
             0
           );
 
 
         const total =
-          drinkTotal +
-          bagTotal;
+          drinkTotal + bagTotal;
 
 
         /* =================================================
@@ -506,6 +477,10 @@ const server = http.createServer(
 
           items,
 
+          bag1Count,
+
+          bag2Count,
+
           total
         };
 
@@ -523,8 +498,7 @@ const server = http.createServer(
 
 
         /* =================================================
-           訂單儲存成功後
-           → 立即發 Telegram
+           訂單成功後 → Telegram
            ================================================= */
 
         try {
@@ -536,14 +510,14 @@ const server = http.createServer(
         } catch (telegramError) {
 
           console.error(
-            "Telegram 通知錯誤：",
+            "❌ Telegram 通知失敗：",
             telegramError.message
           );
         }
 
 
         /* =================================================
-           回覆客人
+           回覆前端
            ================================================= */
 
         return send(
@@ -578,7 +552,7 @@ const server = http.createServer(
 
 
     /* =====================================================
-       後台
+       後台訂單
        ===================================================== */
 
     if (
@@ -595,6 +569,7 @@ const server = http.createServer(
         url.searchParams.get("key") !==
         adminKey
       ) {
+
         return send(
           res,
           401,
@@ -610,56 +585,94 @@ const server = http.createServer(
 
       const rows =
         orders
-          .map(
-            o => `
+          .map(order => {
 
-      <tr>
+            const items =
+              (order.items || [])
+                .map(item => {
 
-        <td>
-          ${escapeHtml(o.id)}
-        </td>
+                  let text =
+                    `${escapeHtml(
+                      item.name || ""
+                    )} × ${
+                      Number(
+                        item.quantity || 0
+                      )
+                    }`;
 
-        <td>
-          ${escapeHtml(o.createdAt)}
-        </td>
 
-        <td>
-          ${escapeHtml(
-            o.customer.name
-          )}
-          <br>
-          ${escapeHtml(
-            o.customer.phone
-          )}
-        </td>
+                  const sweetness =
+                    String(
+                      item.sweetness || ""
+                    ).trim();
 
-        <td>
+                  const ice =
+                    String(
+                      item.ice || ""
+                    ).trim();
 
-          ${o.items
-            .map(
-              i =>
-                `${escapeHtml(
-                  i.name
-                )}
-                × ${i.quantity}
-                （${escapeHtml(
-                  i.sweetness || ""
-                )}／${escapeHtml(
-                  i.ice || ""
-                )}）`
-            )
-            .join("<br>")}
 
-        </td>
+                  if (sweetness) {
+                    text +=
+                      `｜甜度：${
+                        escapeHtml(
+                          sweetness
+                        )
+                      }`;
+                  }
 
-        <td>
-          $${o.total}
-        </td>
 
-      </tr>
+                  if (ice) {
+                    text +=
+                      `｜冰塊：${
+                        escapeHtml(
+                          ice
+                        )
+                      }`;
+                  }
 
-    `
-          )
+
+                  return text;
+
+                })
+                .join("<br>");
+
+
+            return `
+
+<tr>
+
+<td>
+${escapeHtml(order.id)}
+</td>
+
+<td>
+${escapeHtml(order.createdAt)}
+</td>
+
+<td>
+${escapeHtml(
+  order.customer.name
+)}
+<br>
+${escapeHtml(
+  order.customer.phone
+)}
+</td>
+
+<td>
+${items}
+</td>
+
+<td>
+$${order.total}
+</td>
+
+</tr>
+
+`;
+
+          })
           .join("");
 
 
@@ -669,6 +682,8 @@ const server = http.createServer(
 
 <html lang="zh-Hant">
 
+<head>
+
 <meta charset="utf-8">
 
 <meta
@@ -676,11 +691,13 @@ const server = http.createServer(
   content="width=device-width,initial-scale=1"
 >
 
-<title>訂單管理</title>
+<title>
+訂單管理
+</title>
 
 <style>
 
-body{
+body {
 
   font-family:
     -apple-system,
@@ -688,64 +705,69 @@ body{
     "Noto Sans TC",
     sans-serif;
 
-  margin:0;
+  margin: 0;
 
-  background:#f5f6f8;
+  background: #f5f6f8;
 
-  color:#2b211d;
+  color: #2b211d;
 }
 
-main{
+main {
 
-  max-width:1400px;
+  max-width: 1400px;
 
-  margin:30px auto;
+  margin: 30px auto;
 
-  padding:0 20px;
+  padding: 0 20px;
 }
 
-h1{
+h1 {
 
-  color:#8f2f27;
+  color: #8f2f27;
 
-  font-size:28px;
+  font-size: 28px;
 
-  margin-bottom:24px;
+  margin-bottom: 24px;
 }
 
-table{
+table {
 
-  width:100%;
+  width: 100%;
 
-  min-width:850px;
+  min-width: 850px;
 
-  border-collapse:collapse;
+  border-collapse: collapse;
 
-  background:white;
+  background: white;
 
-  border-radius:16px;
+  border-radius: 16px;
 
-  overflow:hidden;
+  overflow: hidden;
 }
 
 th,
-td{
+td {
 
-  padding:16px;
+  padding: 16px;
 
-  border-bottom:1px solid #eee;
+  border-bottom:
+    1px solid #eee;
 
-  text-align:left;
+  text-align: left;
 
-  vertical-align:top;
+  vertical-align: top;
 }
 
-th{
+th {
 
-  background:#eee4d8;
+  background: #eee4d8;
 }
 
 </style>
+
+</head>
+
+<body>
 
 <main>
 
@@ -777,7 +799,7 @@ th{
 
 ${
   rows ||
-  "<tr><td colspan=5>目前沒有訂單</td></tr>"
+  "<tr><td colspan='5'>目前沒有訂單</td></tr>"
 }
 
 </tbody>
@@ -785,6 +807,10 @@ ${
 </table>
 
 </main>
+
+</body>
+
+</html>
 
 `;
 
@@ -896,7 +922,7 @@ ${
        404
        ===================================================== */
 
-    send(
+    return send(
       res,
       404,
       "Not Found"
@@ -909,19 +935,20 @@ ${
    HTML Escape
    ========================================================= */
 
-function escapeHtml(s) {
+function escapeHtml(value) {
 
-  return String(s).replace(
+  return String(
+    value ?? ""
+  ).replace(
     /[&<>"']/g,
-
-    c =>
+    char =>
       ({
         "&": "&amp;",
         "<": "&lt;",
         ">": "&gt;",
         "\"": "&quot;",
         "'": "&#39;"
-      }[c])
+      }[char])
   );
 }
 
@@ -932,8 +959,11 @@ function escapeHtml(s) {
 
 server.listen(
   PORT,
-  () =>
+  () => {
+
     console.log(
       `Tea House ordering system running on port ${PORT}`
-    )
+    );
+
+  }
 );
