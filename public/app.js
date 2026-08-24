@@ -80,10 +80,12 @@ qs("#orderForm").onsubmit=async e=>{
   if(!cart.length) return toast("請先選擇商品");
 const formElement=e.currentTarget;
 const form=new FormData(formElement);
-  const payload={
-    customer:{name:form.get("name"),phone:form.get("phone"),note:form.get("note")},
-    items:cart.map(({id,name,price,quantity,sweetness,ice})=>({id,name,price,quantity,sweetness,ice}))
-  };
+const payload={
+  customer:{name:form.get("name"),phone:form.get("phone"),note:form.get("note")},
+  items:cart.map(({id,name,price,quantity,sweetness,ice})=>({id,name,price,quantity,sweetness,ice})),
+  bag1Count:bag1Count,
+  bag2Count:bag2Count
+};
   const result=qs("#result"); result.className=""; result.textContent="送出中…";
   try{
     const r=await fetch("/api/orders",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
