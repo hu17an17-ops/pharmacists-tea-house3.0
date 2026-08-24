@@ -822,23 +822,20 @@ http.createServer(async (req, res) => {
           : [];
 
       if(
-        !c.name ||
-        !c.phone ||
-        !c.pickupTime ||
-        !items.length
-      ){
-
-        return send(
-          res,
-          400,
-          {
-            ok:false,
-            message:
-              "請填寫姓名、電話、到店時間並至少選擇一杯茶。"
-          }
-        );
-
-      }
+  !c.name ||
+  !c.phone ||
+  !items.length
+){
+  return send(
+    res,
+    400,
+    {
+      ok:false,
+      message:
+        "請填寫姓名、電話並至少選擇一杯茶。"
+    }
+  );
+}
 
       const si =
         items
