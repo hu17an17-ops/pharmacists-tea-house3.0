@@ -109,3 +109,8 @@ function changeBag(type, amount) {
   }
 }
 render();
+
+const bagTotal = bag1Count * 1 + bag2Count * 2;
+const drinkTotal = cart.reduce((s, x) => s + x.price * x.quantity, 0);
+
+qs("#cartTotal").textContent = money(drinkTotal + bagTotal);
