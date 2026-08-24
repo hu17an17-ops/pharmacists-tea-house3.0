@@ -308,17 +308,35 @@ ${os.map(o => {
 
 <td>
 <b>${esc(c.name)}</b><br>
-${esc(c.phone)}<br>
-統編：${esc(c.taxId || "未填")}<br>
-購物袋：${esc(c.shoppingBag || "不需要")}<br>
-到店：${esc(c.pickupTime || "")}<br>
-備註：${esc(c.note || "")}
+${esc(c.phone)}
+${c.taxId ? `<br>統編：${esc(c.taxId)}` : ""}
+${c.shoppingBag === "需要" ? `<br>購物袋：需要` : ""}
+${c.pickupTime && c.pickupTime !== "undefined" ? `<br>到店：${esc(c.pickupTime)}` : ""}
+${c.note ? `<br>備註：${esc(c.note)}` : ""}
 </td>
 
 <td>
 ${(o.items || [])
-  .map(i => `${esc(i.name)} × ${i.quantity}`)
-  .join("<br>")}
+  .map(i => {
+    const options = [
+      i.size ? `尺寸：${esc(i.size)}` : "",
+      (i.sweetness || i.sugar || i.sugarLevel)
+        ? `甜度：${esc(i.sweetness || i.sugar || i.sugarLevel)}`
+        : "",
+      (i.ice || i.iceLevel || i.iceAmount)
+        ? `冰塊：${esc(i.ice || i.iceLevel || i.iceAmount)}`
+        : "",
+      i.topping ? `加料：${esc(i.topping)}` : ""
+    ].filter(Boolean);
+
+    return `
+      <div style="margin-bottom:6px">
+        <b>${esc(i.name)} × ${i.quantity}</b>
+        ${options.length ? `<br>${options.join("<br>")}` : ""}
+      </div>
+    `;
+  })
+  .join("")}
 </td>
 
 <td>
@@ -486,7 +504,9 @@ function showNewOrder(order){
     "🔔 有新訂單！ " +
     order.id +
     "｜$" +
-    order.total;
+    order.total +
+    "｜" +
+    (order.customer?.name || "新客人");
 
   notice.classList.add("show");
 
@@ -545,12 +565,29 @@ function addOrder(order){
 
   const items =
     (order.items || [])
-      .map(i =>
-        escapeHtml(i.name) +
-        " × " +
-        i.quantity
-      )
-      .join("<br>");
+      .map(i => {
+        const options = [
+          i.size ? "尺寸：" + escapeHtml(i.size) : "",
+          (i.sweetness || i.sugar || i.sugarLevel)
+            ? "甜度：" + escapeHtml(i.sweetness || i.sugar || i.sugarLevel)
+            : "",
+          (i.ice || i.iceLevel || i.iceAmount)
+            ? "冰塊：" + escapeHtml(i.ice || i.iceLevel || i.iceAmount)
+            : "",
+          i.topping ? "加料：" + escapeHtml(i.topping) : ""
+        ].filter(Boolean);
+
+        return (
+          "<div style=\"margin-bottom:6px\"><b>" +
+          escapeHtml(i.name) +
+          " × " +
+          i.quantity +
+          "</b>" +
+          (options.length ? "<br>" + options.join("<br>") : "") +
+          "</div>"
+        );
+      })
+      .join("");
 
   tr.innerHTML = \`
 <td>\${escapeHtml(order.id)}</td>
@@ -559,11 +596,11 @@ function addOrder(order){
 
 <td>
 <b>\${escapeHtml(c.name)}</b><br>
-\${escapeHtml(c.phone)}<br>
-統編：\${escapeHtml(c.taxId || "未填")}<br>
-購物袋：\${escapeHtml(c.shoppingBag || "不需要")}<br>
-到店：\${escapeHtml(c.pickupTime || "")}<br>
-備註：\${escapeHtml(c.note || "")}
+\${escapeHtml(c.phone)}
+\${c.taxId ? `<br>統編：\${escapeHtml(c.taxId)}` : ""}
+\${c.shoppingBag === "需要" ? `<br>購物袋：需要` : ""}
+\${c.pickupTime && c.pickupTime !== "undefined" ? `<br>到店：\${escapeHtml(c.pickupTime)}` : ""}
+\${c.note ? `<br>備註：\${escapeHtml(c.note)}` : ""}
 </td>
 
 <td>
@@ -822,20 +859,22 @@ http.createServer(async (req, res) => {
           : [];
 
       if(
-  !c.name ||
-  !c.phone ||
-  !items.length
-){
-  return send(
-    res,
-    400,
-    {
-      ok:false,
-      message:
-        "請填寫姓名、電話並至少選擇一杯茶。"
-    }
-  );
-}
+        !String(c.name || "").trim() ||
+        !String(c.phone || "").trim() ||
+        !items.length
+      ){
+
+        return send(
+          res,
+          400,
+          {
+            ok:false,
+            message:
+              "請填寫姓名、電話並至少選擇一杯茶。"
+          }
+        );
+
+      }
 
       const si =
         items
@@ -862,7 +901,24 @@ http.createServer(async (req, res) => {
                     i.quantity || 1
                   )
                 )
-              )
+              ),
+
+            // 保留前端傳來的飲料客製選項
+            sweetness:
+              String(i.sweetness ?? i.sugar ?? i.sugarLevel ?? "")
+                .trim().slice(0,30),
+
+            ice:
+              String(i.ice ?? i.iceLevel ?? i.iceAmount ?? "")
+                .trim().slice(0,30),
+
+            size:
+              String(i.size ?? "")
+                .trim().slice(0,30),
+
+            topping:
+              String(i.topping ?? "")
+                .trim().slice(0,100)
 
           }))
           .filter(
@@ -927,9 +983,7 @@ http.createServer(async (req, res) => {
               : "不需要",
 
           pickupTime:
-            String(
-              c.pickupTime
-            ).slice(0,5),
+            String(c.pickupTime || "").trim().slice(0,5),
 
           note:
             String(c.note || "")
