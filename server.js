@@ -73,8 +73,8 @@ const server = http.createServer(async (req, res) => {
         return send(res, 400, { ok: false, message: "請填寫姓名、電話並至少選一杯茶。" });
       }
 
-const bag1Count = Math.max(0, Number(c.bag1Count || 0));
-const bag2Count = Math.max(0, Number(c.bag2Count || 0));
+const bag1Count = Math.max(0, Number(body.bag1Count || 0));
+const bag2Count = Math.max(0, Number(body.bag2Count || 0));
 
 const bagTotal = bag1Count * 1 + bag2Count * 2;
 
