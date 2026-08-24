@@ -62,7 +62,8 @@ function renderCart(){
       <select data-ice="${i}">${["去冰","微冰","少冰","正常冰"].map(v=>`<option ${x.ice===v?"selected":""}>${v}</option>`).join("")}</select>
     </div>
   </div>`).join("");
-  qs("#cartTotal").textContent=money(cart.reduce((s,x)=>s+x.price*x.quantity,0));
+  const bagTotal = bag1Count * 1 + bag2Count * 2;
+qs("#cartTotal").textContent=money(cart.reduce((s,x)=>s+x.price*x.quantity,0) + bagTotal);
   document.querySelectorAll("[data-minus]").forEach(b=>b.onclick=()=>{const i=+b.dataset.minus;cart[i].quantity--;if(cart[i].quantity<=0)cart.splice(i,1);renderCart();updateCart()});
   document.querySelectorAll("[data-plus]").forEach(b=>b.onclick=()=>{cart[+b.dataset.plus].quantity++;renderCart();updateCart()});
   document.querySelectorAll("[data-sweet]").forEach(s=>s.onchange=()=>cart[+s.dataset.sweet].sweetness=s.value);
