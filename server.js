@@ -188,7 +188,7 @@ async function sendTelegramOrderNotification(order) {
 
 
   /* =======================================================
-     訂購內容
+     飲料內容
      ======================================================= */
 
   for (const item of order.items || []) {
@@ -203,8 +203,6 @@ async function sendTelegramOrderNotification(order) {
       `${name} × ${quantity}`;
 
 
-    /* 只有真的有甜度才顯示 */
-
     const sweetness =
       String(item.sweetness || "").trim();
 
@@ -212,8 +210,6 @@ async function sendTelegramOrderNotification(order) {
       text += `｜甜度：${sweetness}`;
     }
 
-
-    /* 只有真的有冰塊才顯示 */
 
     const ice =
       String(item.ice || "").trim();
@@ -224,6 +220,35 @@ async function sendTelegramOrderNotification(order) {
 
 
     lines.push(text);
+  }
+
+
+  /* =======================================================
+     購物袋
+     ======================================================= */
+
+  const bag1Count =
+    Number(order.bag1Count || 0);
+
+  const bag2Count =
+    Number(order.bag2Count || 0);
+
+  if (bag1Count > 0 || bag2Count > 0) {
+
+    lines.push("");
+    lines.push("【購物袋】");
+
+    if (bag1Count > 0) {
+      lines.push(
+        `1 杯袋 × ${bag1Count}`
+      );
+    }
+
+    if (bag2Count > 0) {
+      lines.push(
+        `2～8 杯袋 × ${bag2Count}`
+      );
+    }
   }
 
 
@@ -255,10 +280,6 @@ async function sendTelegramOrderNotification(order) {
   const message =
     lines.join("\n").slice(0, 4000);
 
-
-  /* =======================================================
-     直接送 Telegram
-     ======================================================= */
 
   await telegramApi(
     "sendMessage",
@@ -397,6 +418,13 @@ const server = http.createServer(
           );
 
 
+        /* =================================================
+           購物袋金額
+           
+           1 杯袋 $1
+           2～8 杯袋 $2
+           ================================================= */
+
         const bagTotal =
           bag1Count * 1 +
           bag2Count * 2;
@@ -477,10 +505,11 @@ const server = http.createServer(
 
           items,
 
+          /* 購物袋數量 */
           bag1Count,
-
           bag2Count,
 
+          /* 總金額 */
           total
         };
 
@@ -587,7 +616,11 @@ const server = http.createServer(
         orders
           .map(order => {
 
-            const items =
+            /* =================================================
+               飲料內容
+               ================================================= */
+
+            let items =
               (order.items || [])
                 .map(item => {
 
@@ -613,6 +646,7 @@ const server = http.createServer(
 
 
                   if (sweetness) {
+
                     text +=
                       `｜甜度：${
                         escapeHtml(
@@ -623,6 +657,7 @@ const server = http.createServer(
 
 
                   if (ice) {
+
                     text +=
                       `｜冰塊：${
                         escapeHtml(
@@ -636,6 +671,68 @@ const server = http.createServer(
 
                 })
                 .join("<br>");
+
+
+            /* =================================================
+               購物袋內容
+               ================================================= */
+
+            const bag1Count =
+              Number(
+                order.bag1Count || 0
+              );
+
+            const bag2Count =
+              Number(
+                order.bag2Count || 0
+              );
+
+
+            let bagHtml = "";
+
+
+            if (
+              bag1Count > 0 ||
+              bag2Count > 0
+            ) {
+
+              bagHtml +=
+                `<br><br><strong>購物袋：</strong><br>`;
+
+              if (bag1Count > 0) {
+
+                bagHtml +=
+                  `1 杯袋 × ${bag1Count}<br>`;
+              }
+
+              if (bag2Count > 0) {
+
+                bagHtml +=
+                  `2～8 杯袋 × ${bag2Count}`;
+              }
+            }
+
+
+            /* =================================================
+               備註
+               ================================================= */
+
+            const note =
+              String(
+                order.customer?.note || ""
+              ).trim();
+
+
+            let noteHtml = "";
+
+
+            if (note) {
+
+              noteHtml =
+                `<br><br><strong>備註：</strong>${escapeHtml(
+                  note
+                )}`;
+            }
 
 
             return `
@@ -662,6 +759,8 @@ ${escapeHtml(
 
 <td>
 ${items}
+${bagHtml}
+${noteHtml}
 </td>
 
 <td>
@@ -712,6 +811,7 @@ body {
   color: #2b211d;
 }
 
+
 main {
 
   max-width: 1400px;
@@ -721,6 +821,7 @@ main {
   padding: 0 20px;
 }
 
+
 h1 {
 
   color: #8f2f27;
@@ -729,6 +830,7 @@ h1 {
 
   margin-bottom: 24px;
 }
+
 
 table {
 
@@ -745,6 +847,7 @@ table {
   overflow: hidden;
 }
 
+
 th,
 td {
 
@@ -758,14 +861,22 @@ td {
   vertical-align: top;
 }
 
+
 th {
 
   background: #eee4d8;
 }
 
+
+strong {
+
+  font-weight: 700;
+}
+
 </style>
 
 </head>
+
 
 <body>
 
@@ -774,6 +885,7 @@ th {
 <h1>
 藥師的私房紅茶｜訂單
 </h1>
+
 
 <table>
 
@@ -794,6 +906,7 @@ th {
 </tr>
 
 </thead>
+
 
 <tbody>
 
@@ -927,6 +1040,7 @@ ${
       404,
       "Not Found"
     );
+
   }
 );
 
