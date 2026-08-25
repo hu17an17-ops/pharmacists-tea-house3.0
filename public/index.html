@@ -7,89 +7,368 @@
   <title>藥師的私房紅茶｜線上點餐</title>
   <link rel="stylesheet" href="/style.css">
 </head>
+
 <body>
+
 <header class="hero">
-  <img class="hero-banner" src="/hero-banner.jpg" alt="藥師的私房紅茶｜營業時間與到店自取資訊">
+  <img
+    class="hero-banner"
+    src="/hero-banner.jpg"
+    alt="藥師的私房紅茶｜營業時間與到店自取資訊"
+  >
 </header>
 
+
 <main>
+
   <section class="pickup">
+
     <div class="pickup-icon" aria-hidden="true">
       <span>⌖</span>
     </div>
+
     <div class="pickup-copy">
+
       <div class="pickup-title-row">
+
         <h2>到店自取</h2>
-        <span class="pickup-badge">僅收現金</span>
+
+        <span class="pickup-badge">
+          僅收現金
+        </span>
+
       </div>
-      <p>700 臺南市中西區小西門里府前路一段373號</p>
-      <a href="tel:062135250">06-2135250</a>
+
+      <p>
+        700 臺南市中西區小西門里府前路一段373號
+      </p>
+
+      <a href="tel:062135250">
+        06-2135250
+      </a>
+
     </div>
-    <div class="store-mark" aria-hidden="true">
+
+    <div
+      class="store-mark"
+      aria-hidden="true"
+    >
+
       <span class="store-roof"></span>
+
       <span class="store-body"></span>
+
     </div>
+
   </section>
 
-  <nav class="tabs" aria-label="商品分類">
-    <button class="active" data-filter="全部">全部</button>
-    <button data-filter="紅茶系列">紅茶系列</button>
-    <button data-filter="鮮奶茶系列">鮮奶茶系列</button>
+
+  <nav
+    class="tabs"
+    aria-label="商品分類"
+  >
+
+    <button
+      class="active"
+      data-filter="全部"
+    >
+      全部
+    </button>
+
+    <button
+      data-filter="紅茶系列"
+    >
+      紅茶系列
+    </button>
+
+    <button
+      data-filter="鮮奶茶系列"
+    >
+      鮮奶茶系列
+    </button>
+
   </nav>
 
-  <section>
-    <h2 class="section-title">紅茶系列</h2>
-    <div id="blackTea" class="grid"></div>
-  </section>
 
   <section>
-    <h2 class="section-title">鮮奶茶系列</h2>
-    <div id="milkTea" class="grid"></div>
+
+    <h2 class="section-title">
+      紅茶系列
+    </h2>
+
+    <div
+      id="blackTea"
+      class="grid"
+    ></div>
+
   </section>
 
+
   <section>
-    <h2 class="section-title">戰豆奶茶</h2>
-    <div id="soyTea" class="grid"></div>
+
+    <h2 class="section-title">
+      鮮奶茶系列
+    </h2>
+
+    <div
+      id="milkTea"
+      class="grid"
+    ></div>
+
   </section>
+
+
+  <section>
+
+    <h2 class="section-title">
+      戰豆奶茶
+    </h2>
+
+    <div
+      id="soyTea"
+      class="grid"
+    ></div>
+
+  </section>
+
 </main>
 
-<button id="cartButton" class="cart-button" aria-label="查看訂單">
-  <span class="cart-icon">🛒</span><b id="cartCount">0</b><span>查看訂單</span>
+
+<button
+  id="cartButton"
+  class="cart-button"
+  aria-label="查看訂單"
+>
+
+  <span class="cart-icon">
+    🛒
+  </span>
+
+  <b id="cartCount">
+    0
+  </b>
+
+  <span>
+    查看訂單
+  </span>
+
 </button>
 
+
 <dialog id="cartDialog">
+
   <div class="dialog-inner">
-    <button class="close" id="closeCart" aria-label="關閉">×</button>
-    <h2>確認訂單</h2>
+
+    <button
+      class="close"
+      id="closeCart"
+      aria-label="關閉"
+    >
+      ×
+    </button>
+
+
+    <h2>
+      確認訂單
+    </h2>
+
+
     <div id="cartItems"></div>
-    <div class="total"><span>合計</span><strong id="cartTotal">$0</strong></div>
+
+
+    <div class="total">
+
+      <span>
+        合計
+      </span>
+
+      <strong id="cartTotal">
+        $0
+      </strong>
+
+    </div>
+
+
     <form id="orderForm">
-      <label>姓名<input name="name" required maxlength="50" placeholder="請輸入姓名"></label>
-      <label>電話<input name="phone" required maxlength="30" inputmode="tel" placeholder="請輸入手機或電話"></label>
-<label>購物袋</label>
 
-<div class="bag-option">
-  <span>1 杯袋 <small>$1／個</small></span>
-  <button type="button" onclick="changeBag('bag1',-1)">−</button>
-  <span id="bag1Count">0</span>
-  <button type="button" onclick="changeBag('bag1',1)">＋</button>
-</div>
+      <!-- 姓名 -->
 
-<div class="bag-option">
-  <span>2～8 杯袋 <small>$2／個</small></span>
-  <button type="button" onclick="changeBag('bag2',-1)">−</button>
-  <span id="bag2Count">0</span>
-  <button type="button" onclick="changeBag('bag2',1)">＋</button>
-</div>
-      <label>備註<textarea name="note" maxlength="300" placeholder="例如：統編、其他需求"></textarea></label>
-      <button class="submit" type="submit">送出訂單</button>
+      <label>
+        姓名
+
+        <input
+          name="name"
+          required
+          maxlength="50"
+          placeholder="請輸入姓名"
+        >
+
+      </label>
+
+
+      <!-- 電話 -->
+
+      <label>
+        電話
+
+        <input
+          name="phone"
+          required
+          maxlength="30"
+          inputmode="tel"
+          placeholder="請輸入手機或電話"
+        >
+
+      </label>
+
+
+      <!-- 取餐時間 -->
+
+      <label>
+        取餐時間
+
+        <input
+          name="pickupDateTime"
+          required
+          maxlength="50"
+          placeholder="例如：11/13 05:20"
+        >
+
+      </label>
+
+
+      <!-- 取餐時間說明 -->
+
+      <div
+        style="
+          margin:-4px 0 12px;
+          padding:10px 12px;
+          background:#fff8ef;
+          border:1px solid #ead8c6;
+          border-radius:10px;
+          color:#7a675b;
+          font-size:14px;
+          line-height:1.6;
+        "
+      >
+        如訂購杯數較多，需較長製作時間，
+        請提早訂購或來電詢問，謝謝。
+      </div>
+
+
+      <!-- 購物袋 -->
+
+      <label>
+        購物袋
+      </label>
+
+
+      <div class="bag-option">
+
+        <span>
+          1 杯袋
+          <small>
+            $1／個
+          </small>
+        </span>
+
+        <button
+          type="button"
+          onclick="changeBag('bag1',-1)"
+        >
+          −
+        </button>
+
+        <span id="bag1Count">
+          0
+        </span>
+
+        <button
+          type="button"
+          onclick="changeBag('bag1',1)"
+        >
+          ＋
+        </button>
+
+      </div>
+
+
+      <div class="bag-option">
+
+        <span>
+          2～8 杯袋
+          <small>
+            $2／個
+          </small>
+        </span>
+
+        <button
+          type="button"
+          onclick="changeBag('bag2',-1)"
+        >
+          −
+        </button>
+
+        <span id="bag2Count">
+          0
+        </span>
+
+        <button
+          type="button"
+          onclick="changeBag('bag2',1)"
+        >
+          ＋
+        </button>
+
+      </div>
+
+
+      <!-- 備註 -->
+
+      <label>
+
+        備註
+
+        <textarea
+          name="note"
+          maxlength="300"
+          placeholder="例如：統編、其他需求"
+        ></textarea>
+
+      </label>
+
+
+      <!-- 送出 -->
+
+      <button
+        class="submit"
+        type="submit"
+      >
+        送出訂單
+      </button>
+
     </form>
-    <p class="cash-note">送出後請依訂單編號到店取餐，現場付款。</p>
+
+
+    <p class="cash-note">
+      送出後請依訂單編號到店取餐，現場付款。
+    </p>
+
+
     <div id="result"></div>
+
   </div>
+
 </dialog>
 
-<div id="toast" class="toast"></div>
+
+<div
+  id="toast"
+  class="toast"
+></div>
+
+
 <script src="/app.js"></script>
+
 </body>
 </html>
