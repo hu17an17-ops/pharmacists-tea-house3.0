@@ -15,6 +15,15 @@ if (!fs.existsSync(ORDERS_FILE)) {
   fs.writeFileSync(ORDERS_FILE, "[]", "utf8");
 }
 
+/* =========================================================
+   Supabase 設定
+   Render Environment Variables：
+
+   SUPABASE_URL
+   SUPABASE_SERVICE_ROLE_KEY
+
+   ========================================================= */
+
 function getSupabaseUrl() {
   return String(process.env.SUPABASE_URL || "")
     .trim()
@@ -32,6 +41,11 @@ function hasSupabaseConfig() {
     getSupabaseKey()
   );
 }
+
+
+/* =========================================================
+   Supabase API
+   ========================================================= */
 
 async function supabaseRequest(
   endpoint,
@@ -97,6 +111,11 @@ async function supabaseRequest(
   return data;
 }
 
+
+/* =========================================================
+   本機 orders.json 備份
+   ========================================================= */
+
 function readOrders() {
   try {
     return JSON.parse(
@@ -110,6 +129,7 @@ function readOrders() {
   }
 }
 
+
 function writeOrders(orders) {
   fs.writeFileSync(
     ORDERS_FILE,
@@ -121,6 +141,11 @@ function writeOrders(orders) {
     "utf8"
   );
 }
+
+
+/* =========================================================
+   HTTP 回應
+   ========================================================= */
 
 function send(
   res,
@@ -147,6 +172,11 @@ function send(
       : JSON.stringify(body)
   );
 }
+
+
+/* =========================================================
+   靜態檔案
+   ========================================================= */
 
 function safeFilePath(urlPath) {
   let decoded;
@@ -185,6 +215,11 @@ function safeFilePath(urlPath) {
 
   return null;
 }
+
+
+/* =========================================================
+   讀取 POST JSON
+   ========================================================= */
 
 function parseBody(req) {
   return new Promise(
@@ -233,6 +268,11 @@ function parseBody(req) {
     }
   );
 }
+
+
+/* =========================================================
+   Telegram API
+   ========================================================= */
 
 async function telegramApi(
   method,
@@ -283,6 +323,11 @@ async function telegramApi(
 
   return data.result;
 }
+
+
+/* =========================================================
+   Telegram 訂單通知
+   ========================================================= */
 
 async function sendTelegramOrderNotification(
   order
@@ -361,6 +406,11 @@ async function sendTelegramOrderNotification(
     lines.push(text);
   }
 
+
+  /* =======================================================
+     購物袋
+     ======================================================= */
+
   const bag1Count =
     Number(
       order.bag1Count || 0
@@ -391,6 +441,11 @@ async function sendTelegramOrderNotification(
     }
   }
 
+
+  /* =======================================================
+     備註
+     ======================================================= */
+
   const note =
     String(
       order.customer.note || ""
@@ -402,6 +457,11 @@ async function sendTelegramOrderNotification(
       `備註：${note}`
     );
   }
+
+
+  /* =======================================================
+     總金額
+     ======================================================= */
 
   lines.push("");
   lines.push(
@@ -433,6 +493,11 @@ async function sendTelegramOrderNotification(
   return true;
 }
 
+
+/* =========================================================
+   取得統一編號
+   ========================================================= */
+
 function getInvoiceNumber(
   body,
   customer
@@ -448,6 +513,11 @@ function getInvoiceNumber(
     .slice(0, 30);
 }
 
+
+/* =========================================================
+   取得購物袋數量
+   ========================================================= */
+
 function getBag1Count(body) {
   return Math.max(
     0,
@@ -459,6 +529,7 @@ function getBag1Count(body) {
   );
 }
 
+
 function getBag2Count(body) {
   return Math.max(
     0,
@@ -469,6 +540,11 @@ function getBag2Count(body) {
     )
   );
 }
+
+
+/* =========================================================
+   建立 Supabase 訂單資料
+   ========================================================= */
 
 function buildSupabaseOrder(
   order
@@ -536,6 +612,11 @@ function buildSupabaseOrder(
   };
 }
 
+
+/* =========================================================
+   寫入 Supabase
+   ========================================================= */
+
 async function saveOrderToSupabase(
   order
 ) {
@@ -566,6 +647,11 @@ async function saveOrderToSupabase(
     : result;
 }
 
+
+/* =========================================================
+   從 Supabase 取得訂單
+   ========================================================= */
+
 async function getSupabaseOrders() {
   const result =
     await supabaseRequest(
@@ -579,6 +665,11 @@ async function getSupabaseOrders() {
     ? result
     : [];
 }
+
+
+/* =========================================================
+   從 Supabase 找指定訂單
+   ========================================================= */
 
 async function getSupabaseOrderByNumber(
   orderNumber
@@ -611,6 +702,11 @@ async function getSupabaseOrderByNumber(
 
   return null;
 }
+
+
+/* =========================================================
+   更新 Supabase 訂單狀態
+   ========================================================= */
 
 async function updateSupabaseOrderStatus(
   orderNumber,
@@ -673,6 +769,11 @@ async function updateSupabaseOrderStatus(
     ? result[0] || null
     : result;
 }
+
+
+/* =========================================================
+   將 Supabase 訂單轉成前端 / 後台格式
+   ========================================================= */
 
 function normalizeSupabaseOrder(
   row
@@ -745,6 +846,11 @@ function normalizeSupabaseOrder(
   };
 }
 
+
+/* =========================================================
+   HTML Escape
+   ========================================================= */
+
 function escapeHtml(value) {
   return String(
     value ?? ""
@@ -761,6 +867,11 @@ function escapeHtml(value) {
   );
 }
 
+
+/* =========================================================
+   HTTP Server
+   ========================================================= */
+
 const server =
   http.createServer(
     async (
@@ -776,6 +887,11 @@ const server =
             "localhost"
           }`
         );
+
+
+      /* =====================================================
+         OPTIONS
+         ===================================================== */
 
       if (
         req.method ===
@@ -797,6 +913,11 @@ const server =
 
         return res.end();
       }
+
+
+      /* =====================================================
+         Health Check
+         ===================================================== */
 
       if (
         req.method === "GET" &&
@@ -824,6 +945,11 @@ const server =
         );
       }
 
+
+      /* =====================================================
+         客人送出訂單
+         ===================================================== */
+
       if (
         req.method === "POST" &&
         url.pathname ===
@@ -847,6 +973,11 @@ const server =
             )
               ? body.items
               : [];
+
+
+          /* =================================================
+             基本資料
+             ================================================= */
 
           const name =
             String(
@@ -892,6 +1023,7 @@ const server =
               .trim()
               .slice(0, 300);
 
+
           if (
             !name ||
             !phone ||
@@ -911,6 +1043,11 @@ const server =
             );
           }
 
+
+          /* =================================================
+             購物袋
+             ================================================= */
+
           const bag1Count =
             getBag1Count(
               body
@@ -921,9 +1058,22 @@ const server =
               body
             );
 
+
+          /* =================================================
+             購物袋金額
+
+             1 杯袋 $1
+             2～8 杯袋 $2
+             ================================================= */
+
           const bagTotal =
             bag1Count * 1 +
             bag2Count * 2;
+
+
+          /* =================================================
+             飲料總額
+             ================================================= */
 
           const drinkTotal =
             items.reduce(
@@ -953,12 +1103,28 @@ const server =
               0
             );
 
+
           const total =
             drinkTotal +
             bagTotal;
 
+
+          /* =================================================
+             產生數字訂單編號
+
+             Supabase order_number 是 bigint，
+             所以不能使用 Txxxxxx 字串。
+
+             Date.now() 本身就是安全的數字範圍。
+             ================================================= */
+
           const orderNumber =
             Date.now();
+
+
+          /* =================================================
+             前端原本使用的訂單 ID
+             ================================================= */
 
           const displayOrderId =
             `T${orderNumber
@@ -968,7 +1134,13 @@ const server =
               .toString("hex")
               .toUpperCase()}`;
 
+
+          /* =================================================
+             建立完整訂單
+             ================================================= */
+
           const order = {
+
             id:
               displayOrderId,
 
@@ -1002,7 +1174,15 @@ const server =
 
             total
           };
-                    let supabaseOrder;
+
+
+          /* =================================================
+             先寫入 Supabase
+
+             這是正式訂單資料庫。
+             ================================================= */
+
+          let supabaseOrder;
 
           try {
 
@@ -1038,6 +1218,13 @@ const server =
             );
           }
 
+
+          /* =================================================
+             同時保存本機 orders.json
+
+             這只是備份，不再當主要資料庫。
+             ================================================= */
+
           try {
 
             const orders =
@@ -1061,6 +1248,11 @@ const server =
             );
           }
 
+
+          /* =================================================
+             訂單成功後 → Telegram
+             ================================================= */
+
           try {
 
             await sendTelegramOrderNotification(
@@ -1076,6 +1268,11 @@ const server =
               telegramError.message
             );
           }
+
+
+          /* =================================================
+             回覆前端
+             ================================================= */
 
           return send(
             res,
@@ -1099,6 +1296,7 @@ const server =
             }
           );
 
+
         } catch (
           error
         ) {
@@ -1120,6 +1318,13 @@ const server =
           );
         }
       }
+
+
+      /* =====================================================
+         查詢單筆訂單
+
+         GET /api/orders/:orderNumber
+         ===================================================== */
 
       if (
         req.method === "GET" &&
@@ -1150,6 +1355,7 @@ const server =
             );
           }
 
+
           if (
             !hasSupabaseConfig()
           ) {
@@ -1165,10 +1371,12 @@ const server =
             );
           }
 
+
           const row =
             await getSupabaseOrderByNumber(
               orderNumber
             );
+
 
           if (!row) {
 
@@ -1183,6 +1391,7 @@ const server =
             );
           }
 
+
           return send(
             res,
             200,
@@ -1195,6 +1404,7 @@ const server =
                 )
             }
           );
+
 
         } catch (
           error
@@ -1217,6 +1427,19 @@ const server =
           );
         }
       }
+
+
+      /* =====================================================
+         更新訂單狀態
+
+         PUT /api/orders/:orderNumber/status
+
+         body:
+         {
+           "status": "completed"
+         }
+
+         ===================================================== */
 
       if (
         req.method === "PUT" &&
@@ -1245,11 +1468,13 @@ const server =
               ""
             ).trim();
 
+
           const updated =
             await updateSupabaseOrderStatus(
               orderNumber,
               status
             );
+
 
           if (!updated) {
 
@@ -1265,6 +1490,7 @@ const server =
             );
           }
 
+
           return send(
             res,
             200,
@@ -1277,6 +1503,7 @@ const server =
                 )
             }
           );
+
 
         } catch (
           error
@@ -1301,6 +1528,13 @@ const server =
         }
       }
 
+
+      /* =====================================================
+         後台訂單
+
+         /admin?key=你的ADMIN_KEY
+         ===================================================== */
+
       if (
         req.method === "GET" &&
         url.pathname ===
@@ -1310,6 +1544,7 @@ const server =
         const adminKey =
           process.env.ADMIN_KEY ||
           "change-me";
+
 
         if (
           url.searchParams.get(
@@ -1325,7 +1560,14 @@ const server =
           );
         }
 
+
         let orders = [];
+        let supabaseReadSucceeded = false;
+
+
+        /* =================================================
+           優先從 Supabase 讀取
+           ================================================= */
 
         try {
 
@@ -1335,6 +1577,9 @@ const server =
 
             orders =
               await getSupabaseOrders();
+
+            // Supabase 查詢成功，即使 0 筆也代表目前沒有訂單。
+            supabaseReadSucceeded = true;
 
           }
 
@@ -1348,8 +1593,13 @@ const server =
           );
         }
 
+
+        /* =================================================
+           Supabase 失敗時使用本機備份
+           ================================================= */
+
         if (
-          orders.length === 0
+          !supabaseReadSucceeded
         ) {
 
           try {
@@ -1365,7 +1615,6 @@ const server =
               orders =
                 localOrders.map(
                   order => ({
-
                     order_number:
                       order.orderNumber ||
                       null,
@@ -1441,6 +1690,11 @@ const server =
           }
         }
 
+
+        /* =================================================
+           建立後台表格
+           ================================================= */
+
         const rows =
           orders
             .map(
@@ -1500,6 +1754,11 @@ const server =
                     )
                   );
 
+
+                /* =========================================
+                   飲料內容
+                   ========================================= */
+
                 let itemsHtml =
                   (
                     Array.isArray(
@@ -1522,6 +1781,7 @@ const server =
                             )
                           }`;
 
+
                         const sweetness =
                           String(
                             item.sweetness ||
@@ -1534,6 +1794,7 @@ const server =
                             ""
                           ).trim();
 
+
                         if (
                           sweetness
                         ) {
@@ -1543,6 +1804,7 @@ const server =
                               sweetness
                             )}`;
                         }
+
 
                         if (
                           ice
@@ -1554,12 +1816,18 @@ const server =
                             )}`;
                         }
 
+
                         return text;
                       }
                     )
                     .join(
                       "<br>"
                     );
+
+
+                /* =========================================
+                   購物袋
+                   ========================================= */
 
                 if (
                   bag1Count > 0 ||
@@ -1572,7 +1840,6 @@ const server =
                   if (
                     bag1Count > 0
                   ) {
-
                     itemsHtml +=
                       `<br>1杯袋：${bag1Count} 個`;
                   }
@@ -1580,11 +1847,15 @@ const server =
                   if (
                     bag2Count > 0
                   ) {
-
                     itemsHtml +=
                       `<br>2～8杯袋：${bag2Count} 個`;
                   }
                 }
+
+
+                /* =========================================
+                   備註
+                   ========================================= */
 
                 if (
                   notes
@@ -1596,6 +1867,11 @@ const server =
                     )}`;
                 }
 
+
+                /* =========================================
+                   統一編號
+                   ========================================= */
+
                 if (
                   invoiceNumber
                 ) {
@@ -1605,6 +1881,7 @@ const server =
                       invoiceNumber
                     )}`;
                 }
+
 
                 return `
 <tr>
@@ -1662,6 +1939,7 @@ const server =
               }
             )
             .join("");
+
 
         const html = `
 <!doctype html>
@@ -1937,6 +2215,7 @@ ${
 </html>
 `;
 
+
         return send(
           res,
           200,
@@ -1944,6 +2223,11 @@ ${
           "text/html; charset=utf-8"
         );
       }
+
+
+      /* =====================================================
+         靜態檔案
+         ===================================================== */
 
       if (
         req.method === "GET"
@@ -1954,6 +2238,7 @@ ${
             url.pathname
           );
 
+
         if (!file) {
 
           return send(
@@ -1963,6 +2248,7 @@ ${
             "text/plain; charset=utf-8"
           );
         }
+
 
         fs.stat(
           file,
@@ -1984,10 +2270,12 @@ ${
               );
             }
 
+
             const ext =
               path.extname(
                 file
               ).toLowerCase();
+
 
             const types = {
 
@@ -2022,6 +2310,7 @@ ${
                 "image/x-icon"
             };
 
+
             res.writeHead(
               200,
               {
@@ -2034,6 +2323,7 @@ ${
               }
             );
 
+
             fs.createReadStream(
               file
             ).pipe(res);
@@ -2043,14 +2333,25 @@ ${
         return;
       }
 
+
+      /* =====================================================
+         404
+         ===================================================== */
+
       return send(
         res,
         404,
         "Not Found",
         "text/plain; charset=utf-8"
       );
+
     }
   );
+
+
+/* =========================================================
+   啟動
+   ========================================================= */
 
 server.listen(
   PORT,
