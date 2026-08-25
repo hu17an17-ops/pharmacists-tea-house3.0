@@ -182,6 +182,7 @@ async function sendTelegramOrderNotification(order) {
     `訂單編號：${order.id}`,
     `姓名：${order.customer.name}`,
     `電話：${order.customer.phone}`,
+    `取餐時間：${order.customer.pickupDateTime || "未填寫"}`,
     "",
     "【訂購內容】"
   ];
@@ -379,9 +380,17 @@ const server = http.createServer(
            基本驗證
            ================================================= */
 
+        const pickupDateTime =
+          String(
+            customer.pickupDateTime || ""
+          )
+            .trim()
+            .slice(0, 50);
+
         if (
           !customer.name ||
           !customer.phone ||
+          !pickupDateTime ||
           items.length === 0
         ) {
 
@@ -391,7 +400,7 @@ const server = http.createServer(
             {
               ok: false,
               message:
-                "請填寫姓名、電話並至少選一杯茶。"
+                "請填寫姓名、電話、取餐時間並至少選一杯茶。"
             }
           );
         }
@@ -420,7 +429,7 @@ const server = http.createServer(
 
         /* =================================================
            購物袋金額
-           
+
            1 杯袋 $1
            2～8 杯袋 $2
            ================================================= */
@@ -494,6 +503,8 @@ const server = http.createServer(
               )
                 .trim()
                 .slice(0, 30),
+
+            pickupDateTime,
 
             note:
               String(
@@ -754,6 +765,11 @@ ${escapeHtml(
 <br>
 ${escapeHtml(
   order.customer.phone
+)}
+<br>
+<strong>取餐時間：</strong>
+${escapeHtml(
+  order.customer.pickupDateTime || "未填寫"
 )}
 </td>
 
