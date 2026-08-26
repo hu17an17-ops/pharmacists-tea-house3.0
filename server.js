@@ -1,158 +1,72 @@
-const http=require('http');
-const fs=require('fs');
-const path=require('path');
-const crypto=require('crypto');
+const http=require('http'),fs=require('fs'),path=require('path'),crypto=require('crypto');
 const {URL}=require('url');
 
-const PORT=process.env.PORT||3000;
-const PUBLIC_DIR=path.join(__dirname,'public');
-const DATA_DIR=path.join(__dirname,'data');
-const ORDERS_FILE=path.join(DATA_DIR,'orders.json');
+const PORT=process.env.PORT||3000,
+PUBLIC_DIR=path.join(__dirname,'public'),
+DATA_DIR=path.join(__dirname,'data'),
+ORDERS_FILE=path.join(DATA_DIR,'orders.json');
 
 fs.mkdirSync(DATA_DIR,{recursive:true});
+if(!fs.existsSync(ORDERS_FILE))fs.writeFileSync(ORDERS_FILE,'[]','utf8');
 
-if(!fs.existsSync(ORDERS_FILE)){
-  fs.writeFileSync(ORDERS_FILE,'[]','utf8');
-}
-
-const env=n=>
-  String(process.env[n]||'')
-    .trim()
-    .replace(/\/+$/,'');
-
+const env=n=>String(process.env[n]||'').trim().replace(/\/+$/,'');
 const SUPABASE_URL=()=>env('SUPABASE_URL');
+const SUPABASE_KEY=()=>String(process.env.SUPABASE_SERVICE_ROLE_KEY||'').trim();
+const hasSupabase=()=>!!(SUPABASE_URL()&&SUPABASE_KEY());
+const adminKey=()=>String(process.env.ADMIN_KEY||'change-me').trim();
 
-const SUPABASE_KEY=()=>
-  String(
-    process.env.SUPABASE_SERVICE_ROLE_KEY||''
-  ).trim();
-
-const hasSupabase=()=>
-  !!(
-    SUPABASE_URL() &&
-    SUPABASE_KEY()
-  );
-
-const adminKey=()=>
-  String(
-    process.env.ADMIN_KEY||'change-me'
-  ).trim();
-
-
-/* =========================================================
-   Supabase
-   ========================================================= */
-
-async function supabase(
-  endpoint,
-  options={}
-){
-
-  if(!hasSupabase()){
-    throw Error(
-      '沒有設定 SUPABASE_URL 或 SUPABASE_SERVICE_ROLE_KEY'
-    );
-  }
+async function supabase(endpoint,o={}){
+  if(!hasSupabase())throw Error('沒有設定 SUPABASE_URL 或 SUPABASE_SERVICE_ROLE_KEY');
 
   const r=await fetch(
     `${SUPABASE_URL()}/rest/v1/${endpoint}`,
     {
-      method:
-        options.method||'GET',
-
+      method:o.method||'GET',
       headers:{
-        apikey:
-          SUPABASE_KEY(),
-
-        Authorization:
-          `Bearer ${SUPABASE_KEY()}`,
-
-        'Content-Type':
-          'application/json',
-
-        Prefer:
-          options.prefer||
-          'return=representation'
+        apikey:SUPABASE_KEY(),
+        Authorization:`Bearer ${SUPABASE_KEY()}`,
+        'Content-Type':'application/json',
+        Prefer:o.prefer||'return=representation'
       },
-
-      body:
-        options.body===undefined
-          ? undefined
-          : JSON.stringify(
-              options.body
-            )
+      body:o.body===undefined?undefined:JSON.stringify(o.body)
     }
   );
 
   const text=await r.text();
-
   let data=null;
 
   try{
-    data=
-      text
-        ? JSON.parse(text)
-        : null;
+    data=text?JSON.parse(text):null;
   }catch{
     data=text;
   }
 
   if(!r.ok){
-
     throw Error(
-      `Supabase API ${r.status}: ${
-        data?.message||
-        data?.error||
-        text
-      }`
+      `Supabase API ${r.status}: ${data?.message||data?.error||text}`
     );
   }
 
   return data;
 }
 
-
-/* =========================================================
-   本機 orders.json
-   ========================================================= */
-
 function readOrders(){
-
   try{
-
     return JSON.parse(
-      fs.readFileSync(
-        ORDERS_FILE,
-        'utf8'
-      )
+      fs.readFileSync(ORDERS_FILE,'utf8')
     );
-
   }catch{
-
     return [];
   }
 }
 
-
-function writeOrders(
-  orders
-){
-
+function writeOrders(x){
   fs.writeFileSync(
     ORDERS_FILE,
-    JSON.stringify(
-      orders,
-      null,
-      2
-    ),
+    JSON.stringify(x,null,2),
     'utf8'
   );
 }
-
-
-/* =========================================================
-   HTTP 回應
-   ========================================================= */
 
 function send(
   res,
@@ -160,22 +74,14 @@ function send(
   body,
   type='application/json; charset=utf-8'
 ){
-
   res.writeHead(
     status,
     {
-      'Content-Type':
-        type,
-
-      'Cache-Control':
-        'no-store',
-
-      'Access-Control-Allow-Origin':
-        '*',
-
+      'Content-Type':type,
+      'Cache-Control':'no-store',
+      'Access-Control-Allow-Origin':'*',
       'Access-Control-Allow-Methods':
         'GET,POST,PUT,DELETE,OPTIONS',
-
       'Access-Control-Allow-Headers':
         'Content-Type'
     }
@@ -188,77 +94,37 @@ function send(
   );
 }
 
-
-/* =========================================================
-   POST JSON
-   ========================================================= */
-
 function body(req){
+  return new Promise((resolve,reject)=>{
+    let s='';
 
-  return new Promise(
-    (resolve,reject)=>{
+    req.on('data',c=>{
+      s+=c;
 
-      let s='';
+      if(s.length>1048576){
+        reject(
+          Error('Request body too large')
+        );
+        req.destroy();
+      }
+    });
 
-      req.on(
-        'data',
-        c=>{
+    req.on('end',()=>{
+      try{
+        resolve(
+          JSON.parse(s||'{}')
+        );
+      }catch(e){
+        reject(e);
+      }
+    });
 
-          s+=c;
-
-          if(
-            s.length>
-            1048576
-          ){
-
-            reject(
-              Error(
-                'Request body too large'
-              )
-            );
-
-            req.destroy();
-          }
-        }
-      );
-
-      req.on(
-        'end',
-        ()=>{
-
-          try{
-
-            resolve(
-              JSON.parse(
-                s||'{}'
-              )
-            );
-
-          }catch(e){
-
-            reject(e);
-          }
-        }
-      );
-
-      req.on(
-        'error',
-        reject
-      );
-    }
-  );
+    req.on('error',reject);
+  });
 }
 
-
-/* =========================================================
-   HTML Escape
-   ========================================================= */
-
 function esc(v){
-
-  return String(
-    v??''
-  ).replace(
+  return String(v??'').replace(
     /[&<>"']/g,
     c=>({
       '&':'&amp;',
@@ -270,34 +136,18 @@ function esc(v){
   );
 }
 
-
 function num(v){
-
   const n=Number(v);
-
-  return Number.isFinite(n)
-    ? n
-    : 0;
+  return Number.isFinite(n)?n:0;
 }
 
-
-/* =========================================================
-   Telegram
-   ========================================================= */
-
-async function telegram(
-  method,
-  data
-){
-
+async function telegram(method,data){
   const token=
     String(
-      process.env.TELEGRAM_BOT_TOKEN||
-      ''
+      process.env.TELEGRAM_BOT_TOKEN||''
     ).trim();
 
   if(!token){
-
     throw Error(
       '沒有設定 TELEGRAM_BOT_TOKEN'
     );
@@ -308,25 +158,18 @@ async function telegram(
       `https://api.telegram.org/bot${token}/${method}`,
       {
         method:'POST',
-
         headers:{
           'Content-Type':
             'application/json'
         },
-
         body:
           JSON.stringify(data)
       }
     );
 
-  const x=
-    await r.json();
+  const x=await r.json();
 
-  if(
-    !r.ok||
-    !x.ok
-  ){
-
+  if(!r.ok||!x.ok){
     throw Error(
       x.description||
       `Telegram API ${r.status}`
@@ -336,23 +179,13 @@ async function telegram(
   return x.result;
 }
 
-
-/* =========================================================
-   新訂單 Telegram 通知
-   ========================================================= */
-
-async function notify(
-  order
-){
-
+async function notify(order){
   const chat=
     String(
-      process.env.TELEGRAM_CHAT_ID||
-      ''
+      process.env.TELEGRAM_CHAT_ID||''
     ).trim();
 
   if(!chat){
-
     throw Error(
       '沒有設定 TELEGRAM_CHAT_ID'
     );
@@ -372,26 +205,19 @@ async function notify(
   for(
     const i of order.items||[]
   ){
-
     let s=
       `${i.name||''} × ${num(i.quantity)}`;
 
     if(
-      String(
-        i.sweetness||''
-      ).trim()
+      String(i.sweetness||'').trim()
     ){
-
       s+=
         `｜甜度：${i.sweetness}`;
     }
 
     if(
-      String(
-        i.ice||''
-      ).trim()
+      String(i.ice||'').trim()
     ){
-
       s+=
         `｜冰塊：${i.ice}`;
     }
@@ -399,64 +225,48 @@ async function notify(
     a.push(s);
   }
 
+  const b1=num(order.bag1Count);
+  const b2=num(order.bag2Count);
 
-  const b1=
-    num(order.bag1Count);
-
-  const b2=
-    num(order.bag2Count);
-
-
-  if(
-    b1||
-    b2
-  ){
-
+  if(b1||b2){
     a.push(
       '',
       '【購物袋】'
     );
 
     if(b1){
-
       a.push(
         `1 杯袋 × ${b1}`
       );
     }
 
     if(b2){
-
       a.push(
         `2～8 杯袋 × ${b2}`
       );
     }
   }
 
-
   if(
     String(
       order.customer.note||''
     ).trim()
   ){
-
     a.push(
       '',
       `備註：${order.customer.note}`
     );
   }
 
-
   if(
     String(
       order.customer.invoiceNumber||''
     ).trim()
   ){
-
     a.push(
       `統一編號：${order.customer.invoiceNumber}`
     );
   }
-
 
   a.push(
     '',
@@ -465,65 +275,29 @@ async function notify(
     '💵 付款方式：現金'
   );
 
-
   await telegram(
     'sendMessage',
     {
       chat_id:chat,
       text:
-        a.join('\n')
-          .slice(0,4000)
+        a.join('\n').slice(0,4000)
     }
   );
 }
 
-
-/* =========================================================
-   Supabase 訂單轉換
-   ========================================================= */
-
 function normalize(row){
-
-  return {
-
-    id:
-      `T${num(
-        row.order_number
-      )}`,
-
-    orderNumber:
-      num(
-        row.order_number
-      ),
-
-    createdAt:
-      row.created_at,
-
-    status:
-      row.order_status||
-      'new',
+  return{
+    id:`T${num(row.order_number)}`,
+    orderNumber:num(row.order_number),
+    createdAt:row.created_at,
+    status:row.order_status||'new',
 
     customer:{
-
-      name:
-        row.customer_name||
-        '',
-
-      phone:
-        row.customer_phone||
-        '',
-
-      pickupDateTime:
-        row.pickup_time||
-        '',
-
-      invoiceNumber:
-        row.invoice_number||
-        '',
-
-      note:
-        row.notes||
-        ''
+      name:row.customer_name||'',
+      phone:row.customer_phone||'',
+      pickupDateTime:row.pickup_time||'',
+      invoiceNumber:row.invoice_number||'',
+      note:row.notes||''
     },
 
     items:
@@ -531,86 +305,45 @@ function normalize(row){
         ? row.items
         : [],
 
-    bag1Count:
-      num(row.bag1_count),
-
-    bag2Count:
-      num(row.bag2_count),
-
-    total:
-      num(row.total_amount)
+    bag1Count:num(row.bag1_count),
+    bag2Count:num(row.bag2_count),
+    total:num(row.total_amount)
   };
 }
 
-
-/* =========================================================
-   Supabase 取得訂單
-   ========================================================= */
-
 async function getOrders(){
-
   const x=
     await supabase(
       'orders?select=*&order=created_at.desc&limit=100'
     );
 
-  return Array.isArray(x)
-    ? x
-    : [];
+  return Array.isArray(x)?x:[];
 }
 
-
-/* =========================================================
-   單筆訂單
-   ========================================================= */
-
-async function getOrder(
-  number
-){
-
+async function getOrder(n){
   const x=
     await supabase(
       `orders?select=*&order_number=eq.${encodeURIComponent(
-        num(number)
+        num(n)
       )}&limit=1`
     );
 
   return x?.[0]||null;
 }
 
-
-/* =========================================================
-   刪除 Supabase 訂單
-   ========================================================= */
-
-async function deleteOrder(
-  number
-){
-
-  return await supabase(
+async function deleteOrder(n){
+  return supabase(
     `orders?order_number=eq.${encodeURIComponent(
-      num(number)
+      num(n)
     )}`,
     {
-      method:
-        'DELETE',
-
-      prefer:
-        'return=representation'
+      method:'DELETE',
+      prefer:'return=representation'
     }
   );
 }
 
-
-/* =========================================================
-   更新訂單狀態
-   ========================================================= */
-
-async function statusOrder(
-  number,
-  status
-){
-
+async function statusOrder(n,status){
   const allowed=[
     'new',
     'confirmed',
@@ -620,10 +353,7 @@ async function statusOrder(
     'cancelled'
   ];
 
-  if(
-    !allowed.includes(status)
-  ){
-
+  if(!allowed.includes(status)){
     throw Error(
       '訂單狀態不正確'
     );
@@ -632,15 +362,12 @@ async function statusOrder(
   const x=
     await supabase(
       `orders?order_number=eq.${encodeURIComponent(
-        num(number)
+        num(n)
       )}`,
       {
-        method:
-          'PATCH',
-
+        method:'PATCH',
         body:{
-          order_status:
-            status
+          order_status:status
         }
       }
     );
@@ -648,17 +375,8 @@ async function statusOrder(
   return x?.[0]||null;
 }
 
-
-/* =========================================================
-   刪除本機備份
-   ========================================================= */
-
-function deleteLocal(
-  number
-){
-
-  const a=
-    readOrders();
+function deleteLocal(n){
+  const a=readOrders();
 
   const b=
     a.filter(
@@ -666,8 +384,7 @@ function deleteLocal(
         num(
           x.orderNumber??
           x.order_number
-        )!==
-        num(number)
+        )!==num(n)
     );
 
   writeOrders(b);
@@ -675,60 +392,40 @@ function deleteLocal(
   return a.length-b.length;
 }
 
-
-/* =========================================================
-   本機資料轉後台格式
-   ========================================================= */
-
 function localAsRows(){
-
   return readOrders().map(
     o=>({
-
-      order_number:
-        o.orderNumber,
+      order_number:o.orderNumber,
 
       customer_name:
-        o.customer?.name||
-        '',
+        o.customer?.name||'',
 
       customer_phone:
-        o.customer?.phone||
-        '',
+        o.customer?.phone||'',
 
       items:
-        o.items||
-        [],
+        o.items||[],
 
       total_amount:
-        o.total||
-        0,
+        o.total||0,
 
       invoice_number:
-        o.customer?.invoiceNumber||
-        null,
+        o.customer?.invoiceNumber||null,
 
       bag1_count:
-        num(
-          o.bag1Count
-        ),
+        num(o.bag1Count),
 
       bag2_count:
-        num(
-          o.bag2Count
-        ),
+        num(o.bag2Count),
 
       pickup_time:
-        o.customer?.pickupDateTime||
-        null,
+        o.customer?.pickupDateTime||null,
 
       notes:
-        o.customer?.note||
-        null,
+        o.customer?.note||null,
 
       order_status:
-        o.status||
-        'new',
+        o.status||'new',
 
       created_at:
         o.createdAt
@@ -736,35 +433,22 @@ function localAsRows(){
   );
 }
 
-
-/* =========================================================
-   靜態檔案
-   ========================================================= */
-
-function safeFile(
-  p
-){
-
+function safeFile(p){
   let d;
 
   try{
-
     d=
       decodeURIComponent(
         p==='/'?
           '/index.html':
           p
       );
-
   }catch{
-
     return null;
   }
 
   const root=
-    path.resolve(
-      PUBLIC_DIR
-    );
+    path.resolve(PUBLIC_DIR);
 
   const file=
     path.resolve(
@@ -777,1192 +461,174 @@ function safeFile(
   return(
     file===root||
     file.startsWith(
-      root+
-      path.sep
+      root+path.sep
     )
   )
     ? file
     : null;
 }
 
-
-/* =========================================================
-   HTTP Server
-   ========================================================= */
-
-const server=
-  http.createServer(
-    async(
-      req,
-      res
-    )=>{
-
-      try{
-
-        const u=
-          new URL(
-            req.url,
-            `http://${
-              req.headers.host||
-              'localhost'
-            }`
-          );
-
-
-        /* =================================================
-           OPTIONS
-           ================================================= */
-
-        if(
-          req.method===
-          'OPTIONS'
-        ){
-
-          res.writeHead(
-            204,
-            {
-              'Access-Control-Allow-Origin':
-                '*',
-
-              'Access-Control-Allow-Methods':
-                'GET,POST,PUT,DELETE,OPTIONS',
-
-              'Access-Control-Allow-Headers':
-                'Content-Type'
-            }
-          );
-
-          return res.end();
-        }
-
-
-        /* =================================================
-           Health
-           ================================================= */
-
-        if(
-          req.method==='GET'&&
-          u.pathname===
-            '/api/health'
-        ){
-
-          return send(
-            res,
-            200,
-            {
-              ok:true,
-
-              service:
-                'Pharmacists Tea House',
-
-              supabase:
-                hasSupabase(),
-
-              telegram:
-                Boolean(
-                  process.env.TELEGRAM_BOT_TOKEN&&
-                  process.env.TELEGRAM_CHAT_ID
-                )
-            }
-          );
-        }
-
-
-        /* =================================================
-           建立訂單
-           ================================================= */
-
-        if(
-          req.method==='POST'&&
-          u.pathname===
-            '/api/orders'
-        ){
-
-          const b=
-            await body(req);
-
-          const c=
-            b.customer||
-            {};
-
-          const items=
-            Array.isArray(
-              b.items
-            )
-              ? b.items
-              : [];
-
-
-          const name=
-            String(
-              c.name||
-              b.customer_name||
-              ''
-            )
-              .trim()
-              .slice(0,50);
-
-
-          const phone=
-            String(
-              c.phone||
-              b.customer_phone||
-              ''
-            )
-              .trim()
-              .slice(0,30);
-
-
-          const pickup=
-            String(
-              c.pickupDateTime||
-              c.pickup_time||
-              b.pickup_time||
-              ''
-            )
-              .trim()
-              .slice(0,50);
-
-
-          const invoice=
-            String(
-              b.invoiceNumber??
-              b.invoice_number??
-              c.invoiceNumber??
-              c.invoice_number??
-              ''
-            )
-              .trim()
-              .slice(0,30);
-
-
-          const note=
-            String(
-              c.note??
-              c.notes??
-              b.notes??
-              ''
-            )
-              .trim()
-              .slice(0,300);
-
-
-          if(
-            !name||
-            !phone||
-            !pickup||
-            !items.length
-          ){
-
-            return send(
-              res,
-              400,
-              {
-                ok:false,
-
-                message:
-                  '請填寫姓名、電話、取餐時間並至少選一杯茶。'
-              }
-            );
-          }
-
-
-          const bag1=
-            Math.max(
-              0,
-              num(
-                b.bag1Count??
-                b.bag_1_count
-              )
-            );
-
-
-          const bag2=
-            Math.max(
-              0,
-              num(
-                b.bag2Count??
-                b.bag_2_count
-              )
-            );
-
-
-          const total=
-            items.reduce(
-              (
-                sum,
-                i
-              )=>
-                sum+
-                num(i.price)*
-                num(i.quantity),
-              0
-            )+
-            bag1+
-            bag2*2;
-
-
-          const orderNumber=
-            Date.now();
-
-
-          const id=
-            `T${
-              orderNumber
-                .toString(36)
-                .toUpperCase()
-            }${
-              crypto
-                .randomBytes(2)
-                .toString('hex')
-                .toUpperCase()
-            }`;
-
-
-          const order={
-
-            id,
-
-            orderNumber,
-
-            createdAt:
-              new Date()
-                .toISOString(),
-
-            status:
-              'new',
-
-            customer:{
-
-              name,
-
-              phone,
-
-              pickupDateTime:
-                pickup,
-
-              invoiceNumber:
-                invoice,
-
-              note
-            },
-
-            items,
-
-            bag1Count:
-              bag1,
-
-            bag2Count:
-              bag2,
-
-            total
-          };
-
-
-          let saved;
-
-
-          /* =================================================
-             Supabase 正式資料
-             ================================================= */
-
-          try{
-
-            saved=
-              await supabase(
-                'orders',
-                {
-                  method:
-                    'POST',
-
-                  body:{
-
-                    order_number:
-                      orderNumber,
-
-                    customer_name:
-                      name,
-
-                    customer_phone:
-                      phone,
-
-                    items,
-
-                    total_amount:
-                      Math.round(
-                        total
-                      ),
-
-                    invoice_number:
-                      invoice||
-                      null,
-
-                    shopping_bag:
-                      !!(
-                        bag1||
-                        bag2
-                      ),
-
-                    bag1_count:
-                      bag1,
-
-                    bag2_count:
-                      bag2,
-
-                    pickup_time:
-                      pickup||
-                      null,
-
-                    notes:
-                      note||
-                      null,
-
-                    order_status:
-                      'new'
-                  }
-                }
-              );
-
-          }catch(e){
-
-            console.error(
-              'Supabase 寫入失敗',
-              e
-            );
-
-            return send(
-              res,
-              500,
-              {
-                ok:false,
-
-                message:
-                  '訂單無法寫入雲端資料庫，請稍後再試。'
-              }
-            );
-          }
-
-
-          /* =================================================
-             本機備份
-             ================================================= */
-
-          try{
-
-            const a=
-              readOrders();
-
-            a.unshift(
-              order
-            );
-
-            writeOrders(a);
-
-          }catch(e){
-
-            console.error(
-              '本機備份失敗',
-              e
-            );
-          }
-
-
-          /* =================================================
-             Telegram
-             ================================================= */
-
-          try{
-
-            await notify(
-              order
-            );
-
-          }catch(e){
-
-            console.error(
-              'Telegram 通知失敗',
-              e.message
-            );
-          }
-
-
-          return send(
-            res,
-            201,
-            {
-              ok:true,
-
-              orderId:
-                id,
-
-              orderNumber,
-
-              total,
-
-              supabase:
-                true,
-
-              supabaseOrderId:
-                Array.isArray(saved)
-                  ? saved[0]?.id
-                  : saved?.id||
-                    null
-            }
-          );
-        }
-
-
-        /* =================================================
-           查詢單筆訂單
-           ================================================= */
-
-        if(
-          req.method==='GET'&&
-          /^\/api\/orders\/[^/]+$/.test(
-            u.pathname
-          )
-        ){
-
-          if(
-            !hasSupabase()
-          ){
-
-            return send(
-              res,
-              503,
-              {
-                ok:false,
-
-                message:
-                  'Supabase 尚未設定'
-              }
-            );
-          }
-
-
-          const n=
-            u.pathname
-              .split('/')
-              .pop();
-
-
-          const row=
-            await getOrder(n);
-
-
-          if(!row){
-
-            return send(
-              res,
-              404,
-              {
-                ok:false,
-
-                message:
-                  '找不到訂單'
-              }
-            );
-          }
-
-
-          return send(
-            res,
-            200,
-            {
-              ok:true,
-
-              order:
-                normalize(row)
-            }
-          );
-        }
-
-
-        /* =================================================
-           刪除訂單
-           
-           DELETE
-           /api/admin/orders/:orderNumber?key=ADMIN_KEY
-           ================================================= */
-
-        if(
-          req.method==='DELETE'&&
-          /^\/api\/admin\/orders\/[^/]+$/.test(
-            u.pathname
-          )
-        ){
-
-          /* -----------------------------------------------
-             驗證後台密鑰
-             ----------------------------------------------- */
-
-          if(
-            u.searchParams.get(
-              'key'
-            )!==
-            adminKey()
-          ){
-
-            return send(
-              res,
-              401,
-              {
-                ok:false,
-
-                message:
-                  'Unauthorized'
-              }
-            );
-          }
-
-
-          const n=
-            u.pathname
-              .split('/')
-              .pop();
-
-
-          if(
-            !Number.isFinite(
-              Number(n)
-            )
-          ){
-
-            return send(
-              res,
-              400,
-              {
-                ok:false,
-
-                message:
-                  '訂單編號格式錯誤'
-              }
-            );
-          }
-
-
-          if(
-            !hasSupabase()
-          ){
-
-            return send(
-              res,
-              503,
-              {
-                ok:false,
-
-                message:
-                  'Supabase 尚未設定'
-              }
-            );
-          }
-
-
-          try{
-
-            /* ---------------------------------------------
-               真的從 Supabase DELETE
-               --------------------------------------------- */
-
-            const deleted=
-              await deleteOrder(n);
-
-
-            /* ---------------------------------------------
-               同時刪除本機備份
-               --------------------------------------------- */
-
-            const local=
-              deleteLocal(n);
-
-
-            return send(
-              res,
-              200,
-              {
-                ok:true,
-
-                orderNumber:
-                  num(n),
-
-                deletedFromSupabase:
-                  Array.isArray(
-                    deleted
-                  )
-                    ? deleted.length
-                    : 0,
-
-                deletedFromLocalBackup:
-                  local
-              }
-            );
-
-          }catch(e){
-
-            console.error(
-              '刪除訂單錯誤',
-              e
-            );
-
-            return send(
-              res,
-              500,
-              {
-                ok:false,
-
-                message:
-                  e.message||
-                  '刪除訂單失敗'
-              }
-            );
-          }
-        }
-
-
-        /* =================================================
-           更新訂單狀態
-           ================================================= */
-
-        if(
-          req.method==='PUT'&&
-          /^\/api\/orders\/[^/]+\/status$/.test(
-            u.pathname
-          )
-        ){
-
-          const n=
-            u.pathname
-              .split('/')[3];
-
-
-          const b=
-            await body(req);
-
-
-          const row=
-            await statusOrder(
-              n,
-              String(
-                b.status||
-                ''
-              ).trim()
-            );
-
-
-          if(!row){
-
-            return send(
-              res,
-              404,
-              {
-                ok:false,
-
-                message:
-                  '找不到訂單'
-              }
-            );
-          }
-
-
-          return send(
-            res,
-            200,
-            {
-              ok:true,
-
-              order:
-                normalize(row)
-            }
-          );
-        }
-
-
-        /* =================================================
-           後台
-           /admin?key=ADMIN_KEY
-           ================================================= */
-
-        if(
-          req.method==='GET'&&
-          u.pathname===
-            '/admin'
-        ){
-
-          if(
-            u.searchParams.get(
-              'key'
-            )!==
-            adminKey()
-          ){
-
-            return send(
-              res,
-              401,
-              'Unauthorized',
-              'text/plain; charset=utf-8'
-            );
-          }
-
-
-          let rows=[];
-
-
-          /* -----------------------------------------------
-             Supabase 是唯一正式來源
-             ----------------------------------------------- */
-
-          if(
-            hasSupabase()
-          ){
-
-            try{
-
-              rows=
-                await getOrders();
-
-            }catch(e){
-
-              console.error(
-                'Supabase 讀取失敗',
-                e
-              );
-
-              return send(
-                res,
-                503,
-                {
-                  ok:false,
-
-                  message:
-                    'Supabase 讀取失敗，為避免顯示舊備份訂單，後台暫時無法顯示訂單。請稍後重新整理。'
-                }
-              );
-            }
-
-          }else{
-
-            rows=
-              localAsRows();
-          }
-
-
-          return send(
-            res,
-            200,
-            adminHtml(
-              rows,
-              u.searchParams.get(
-                'key'
-              )||''
-            ),
-            'text/html; charset=utf-8'
-          );
-        }
-
-
-        /* =================================================
-           靜態檔案
-           ================================================= */
-
-        if(
-          req.method==='GET'
-        ){
-
-          const file=
-            safeFile(
-              u.pathname
-            );
-
-
-          if(!file){
-
-            return send(
-              res,
-              403,
-              'Forbidden',
-              'text/plain; charset=utf-8'
-            );
-          }
-
-
-          fs.stat(
-            file,
-            (
-              e,
-              s
-            )=>{
-
-              if(
-                e||
-                !s.isFile()
-              ){
-
-                return send(
-                  res,
-                  404,
-                  'Not Found',
-                  'text/plain; charset=utf-8'
-                );
-              }
-
-
-              const ext=
-                path.extname(
-                  file
-                ).toLowerCase();
-
-
-              const types={
-
-                '.html':
-                  'text/html; charset=utf-8',
-
-                '.css':
-                  'text/css; charset=utf-8',
-
-                '.js':
-                  'text/javascript; charset=utf-8',
-
-                '.json':
-                  'application/json; charset=utf-8',
-
-                '.svg':
-                  'image/svg+xml',
-
-                '.jpg':
-                  'image/jpeg',
-
-                '.jpeg':
-                  'image/jpeg',
-
-                '.png':
-                  'image/png',
-
-                '.webp':
-                  'image/webp',
-
-                '.ico':
-                  'image/x-icon'
-              };
-
-
-              res.writeHead(
-                200,
-                {
-                  'Content-Type':
-                    types[ext]||
-                    'application/octet-stream',
-
-                  'Cache-Control':
-                    'no-cache'
-                }
-              );
-
-
-              fs.createReadStream(
-                file
-              ).pipe(res);
-            }
-          );
-
-          return;
-        }
-
-
-        return send(
-          res,
-          404,
-          'Not Found',
-          'text/plain; charset=utf-8'
-        );
-
-
-      }catch(e){
-
-        console.error(
-          'SERVER ERROR',
-          e
-        );
-
-        return send(
-          res,
-          500,
-          {
-            ok:false,
-
-            message:
-              e.message||
-              '伺服器錯誤'
-          }
-        );
-      }
-    }
-  );
-
-
-/* =========================================================
-   後台 HTML
-   ========================================================= */
-
-function adminHtml(
-  rows,
-  key
-){
+function adminHtml(rows,key){
 
   const tr=
-    rows
-      .map(
-        r=>{
+    rows.map(r=>{
 
-          const n=
-            r.order_number??
-            '';
+      const n=
+        r.order_number??'';
 
-          const created=
-            r.created_at
-              ? new Date(
-                  r.created_at
-                ).toLocaleString(
-                  'zh-TW',
-                  {
-                    hour12:false
-                  }
-                )
-              : '';
-
-          const name=
-            r.customer_name||
-            '';
-
-          const phone=
-            r.customer_phone||
-            '';
-
-          const pickup=
-            r.pickup_time||
-            '';
-
-          const total=
-            num(
-              r.total_amount
-            );
-
-          const status=
-            r.order_status||
-            'new';
-
-
-          let items=
-            (
-              Array.isArray(
-                r.items
-              )
-                ? r.items
-                : []
+      const created=
+        r.created_at
+          ? new Date(
+              r.created_at
+            ).toLocaleString(
+              'zh-TW',
+              {
+                hour12:false
+              }
             )
-              .map(
-                i=>{
+          : '';
 
-                  let s=
-                    `${esc(
-                      i.name||
-                      ''
-                    )} × ${
-                      num(
-                        i.quantity
-                      )
-                    }`;
+      const name=
+        r.customer_name||'';
 
+      const phone=
+        r.customer_phone||'';
 
-                  if(
-                    String(
-                      i.sweetness||
-                      ''
-                    ).trim()
-                  ){
+      const pickup=
+        r.pickup_time||'';
 
-                    s+=
-                      `｜甜度：${esc(
-                        i.sweetness
-                      )}`;
-                  }
+      const total=
+        num(r.total_amount);
 
+      const status=
+        r.order_status||'new';
 
-                  if(
-                    String(
-                      i.ice||
-                      ''
-                    ).trim()
-                  ){
+      let items=
+        (
+          Array.isArray(r.items)
+            ? r.items
+            : []
+        )
+          .map(i=>{
 
-                    s+=
-                      `｜冰塊：${esc(
-                        i.ice
-                      )}`;
-                  }
+            let s=
+              `${esc(i.name||'')} × ${num(i.quantity)}`;
 
-
-                  return s;
-                }
-              )
-              .join(
-                '<br>'
-              );
-
-
-          const b1=
-            num(
-              r.bag1_count
-            );
-
-          const b2=
-            num(
-              r.bag2_count
-            );
-
-
-          const note=
-            String(
-              r.notes||
-              ''
-            ).trim();
-
-
-          const invoice=
-            String(
-              r.invoice_number||
-              ''
-            ).trim();
-
-
-          if(
-            b1||
-            b2
-          ){
-
-            items+=
-              '<br><br><strong>購物袋：</strong>';
-
-            if(b1){
-
-              items+=
-                `<br>1杯袋：${b1} 個`;
+            if(
+              String(
+                i.sweetness||''
+              ).trim()
+            ){
+              s+=
+                `｜甜度：${esc(
+                  i.sweetness
+                )}`;
             }
 
-            if(b2){
-
-              items+=
-                `<br>2～8杯袋：${b2} 個`;
+            if(
+              String(
+                i.ice||''
+              ).trim()
+            ){
+              s+=
+                `｜冰塊：${esc(
+                  i.ice
+                )}`;
             }
-          }
 
+            return s;
+          })
+          .join('<br>');
 
-          if(note){
+      const b1=num(r.bag1_count);
+      const b2=num(r.bag2_count);
 
-            items+=
-              `<br><br><strong>備註：</strong>${esc(
-                note
-              )}`;
-          }
+      const note=
+        String(
+          r.notes||''
+        ).trim();
 
+      const invoice=
+        String(
+          r.invoice_number||''
+        ).trim();
 
-          if(invoice){
+      if(b1||b2){
 
-            items+=
-              `<br><strong>統一編號：</strong>${esc(
-                invoice
-              )}`;
-          }
+        items+=
+          '<br><br><strong>購物袋：</strong>';
 
+        if(b1){
+          items+=
+            `<br>1杯袋：${b1} 個`;
+        }
 
-          return `
+        if(b2){
+          items+=
+            `<br>2～8杯袋：${b2} 個`;
+        }
+      }
 
-<tr
-  data-row="${esc(n)}"
->
+      if(note){
+        items+=
+          `<br><br><strong>備註：</strong>${esc(note)}`;
+      }
+
+      if(invoice){
+        items+=
+          `<br><strong>統一編號：</strong>${esc(invoice)}`;
+      }
+
+      return `
+<tr data-row="${esc(n)}">
 
 <td>
-
-<strong>
-  ${esc(n)}
-</strong>
-
+<strong>${esc(n)}</strong>
 </td>
 
-
 <td>
-
 ${esc(created)}
-
 </td>
 
-
 <td>
-
 ${esc(name)}
-
 <br>
-
 ${esc(phone)}
-
 <br><br>
-
-<strong>
-  取餐時間：
-</strong>
-
+<strong>取餐時間：</strong>
 ${esc(pickup)}
-
 </td>
 
-
 <td>
-
 ${items||'—'}
-
 </td>
 
-
 <td>
-
-<strong>
-  $${total}
-</strong>
-
+<strong>$${total}</strong>
 </td>
 
-
 <td>
-
 <span class="status">
-  ${esc(status)}
+${esc(status)}
 </span>
-
 </td>
 
-
 <td>
-
 <button
-  class="delete-btn"
-  type="button"
-  data-order-number="${esc(n)}"
+class="delete-btn"
+type="button"
+data-order-number="${esc(n)}"
 >
-  🗑️ 刪除
+🗑️ 刪除
 </button>
-
 </td>
 
 </tr>
-
 `;
-        }
-      )
-      .join('');
-
+    })
+    .join('');
 
   return `
-
 <!doctype html>
 
 <html lang="zh-Hant">
@@ -1972,216 +638,144 @@ ${items||'—'}
 <meta charset="utf-8">
 
 <meta
-  name="viewport"
-  content="width=device-width,initial-scale=1"
+name="viewport"
+content="width=device-width,initial-scale=1"
 >
 
 <title>
-  藥師的私房紅茶｜訂單管理
+藥師的私房紅茶｜訂單管理
 </title>
-
 
 <style>
 
 *{
-  box-sizing:border-box;
+box-sizing:border-box;
 }
-
 
 body{
+font-family:
+-apple-system,
+BlinkMacSystemFont,
+"Noto Sans TC",
+sans-serif;
 
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "Noto Sans TC",
-    sans-serif;
-
-  margin:0;
-
-  background:#f5f6f8;
-
-  color:#2b211d;
+margin:0;
+background:#f5f6f8;
+color:#2b211d;
 }
-
 
 main{
-
-  max-width:1500px;
-
-  margin:30px auto;
-
-  padding:0 20px;
+max-width:1500px;
+margin:30px auto;
+padding:0 20px;
 }
-
 
 h1{
-
-  color:#8f2f27;
-
-  font-size:28px;
-
-  margin-bottom:24px;
+color:#8f2f27;
+font-size:28px;
+margin-bottom:24px;
 }
-
 
 .info{
-
-  background:#fff;
-
-  border-radius:16px;
-
-  padding:16px;
-
-  margin-bottom:20px;
-
-  box-shadow:
-    0 2px 10px
-    rgba(0,0,0,.05);
+background:#fff;
+border-radius:16px;
+padding:16px;
+margin-bottom:20px;
+box-shadow:
+0 2px 10px
+rgba(0,0,0,.05);
 }
-
 
 .table-wrap{
-
-  width:100%;
-
-  overflow-x:auto;
-
-  background:#fff;
-
-  border-radius:16px;
-
-  box-shadow:
-    0 2px 10px
-    rgba(0,0,0,.05);
+width:100%;
+overflow-x:auto;
+background:#fff;
+border-radius:16px;
+box-shadow:
+0 2px 10px
+rgba(0,0,0,.05);
 }
-
 
 table{
-
-  width:100%;
-
-  min-width:1100px;
-
-  border-collapse:collapse;
+width:100%;
+min-width:1100px;
+border-collapse:collapse;
 }
-
 
 th,
 td{
-
-  padding:16px;
-
-  border-bottom:
-    1px solid #eee;
-
-  text-align:left;
-
-  vertical-align:top;
+padding:16px;
+border-bottom:
+1px solid #eee;
+text-align:left;
+vertical-align:top;
 }
-
 
 th{
-
-  background:#eee4d8;
-
-  color:#5b3028;
-
-  white-space:nowrap;
+background:#eee4d8;
+color:#5b3028;
+white-space:nowrap;
 }
-
 
 tr:hover td{
-
-  background:#fffaf5;
+background:#fffaf5;
 }
-
 
 .status{
-
-  display:inline-block;
-
-  padding:5px 10px;
-
-  border-radius:999px;
-
-  background:#eee4d8;
+display:inline-block;
+padding:5px 10px;
+border-radius:999px;
+background:#eee4d8;
 }
-
-
-/* =====================================================
-   刪除按鈕
-   ===================================================== */
 
 .delete-btn{
-
-  border:0;
-
-  border-radius:10px;
-
-  padding:12px 16px;
-
-  background:#8f2f27;
-
-  color:#fff;
-
-  font-size:16px;
-
-  font-weight:700;
-
-  cursor:pointer;
-
-  white-space:nowrap;
-
-  touch-action:manipulation;
-
-  -webkit-tap-highlight-color:transparent;
+border:0;
+border-radius:10px;
+padding:12px 16px;
+background:#8f2f27;
+color:#fff;
+font-size:16px;
+font-weight:700;
+cursor:pointer;
+white-space:nowrap;
+touch-action:manipulation;
+-webkit-tap-highlight-color:transparent;
 }
-
 
 .delete-btn:active{
-
-  transform:scale(.96);
+transform:scale(.96);
 }
-
 
 .delete-btn:disabled{
-
-  opacity:.55;
-
-  cursor:wait;
+opacity:.55;
+cursor:wait;
 }
 
-
 .empty{
-
-  padding:40px;
-
-  text-align:center;
+padding:40px;
+text-align:center;
 }
 
 </style>
 
 </head>
 
-
 <body>
 
 <main>
 
-
 <h1>
-  藥師的私房紅茶｜訂單管理
+藥師的私房紅茶｜訂單管理
 </h1>
-
 
 <div class="info">
 
 <strong>
-  訂單數量：
+訂單數量：
 </strong>
 
 <span id="orderCount">
-  ${rows.length}
+${rows.length}
 </span>
 
 筆
@@ -2202,7 +796,6 @@ ${
 
 </div>
 
-
 <div class="table-wrap">
 
 <table>
@@ -2212,37 +805,36 @@ ${
 <tr>
 
 <th>
-  訂單
+訂單
 </th>
 
 <th>
-  建立時間
+建立時間
 </th>
 
 <th>
-  客人
+客人
 </th>
 
 <th>
-  訂購內容
+訂購內容
 </th>
 
 <th>
-  總額
+總額
 </th>
 
 <th>
-  狀態
+狀態
 </th>
 
 <th>
-  操作
+操作
 </th>
 
 </tr>
 
 </thead>
-
 
 <tbody>
 
@@ -2252,10 +844,10 @@ ${
 <tr>
 
 <td
-  colspan="7"
-  class="empty"
+colspan="7"
+class="empty"
 >
-  目前沒有訂單
+目前沒有訂單
 </td>
 
 </tr>
@@ -2268,284 +860,957 @@ ${
 
 </div>
 
-
 </main>
-
 
 <script>
 
 (function(){
 
-  const KEY=
-    ${JSON.stringify(key)};
+const KEY=
+${JSON.stringify(key)};
+
+async function del(button){
+
+const n=
+button.dataset.orderNumber;
+
+if(!n){
+
+alert(
+'找不到訂單編號，無法刪除。'
+);
+
+return;
+}
+
+if(
+!window.confirm(
+'確定要刪除訂單 '+
+n+
+' 嗎？\\n\\n'+
+'刪除後會同步從 Supabase 移除，無法復原。'
+)
+){
+return;
+}
+
+button.disabled=true;
+
+button.textContent=
+'刪除中…';
+
+try{
+
+const r=
+await fetch(
+'/api/admin/orders/'+
+encodeURIComponent(n)+
+'?key='+
+encodeURIComponent(KEY),
+{
+method:'DELETE',
+headers:{
+Accept:
+'application/json'
+},
+cache:'no-store'
+}
+);
+
+const text=
+await r.text();
+
+let data={};
+
+try{
+data=
+text
+? JSON.parse(text)
+:{};
+}catch{}
+
+if(
+!r.ok||
+!data.ok
+){
+
+throw Error(
+data.message||
+(
+'刪除失敗（HTTP '+
+r.status+
+'）'
+)
+);
+}
+
+const row=
+button.closest('tr');
+
+if(row){
+row.remove();
+}
+
+const count=
+document.querySelectorAll(
+'tbody tr[data-row]'
+).length;
+
+const ce=
+document.getElementById(
+'orderCount'
+);
+
+if(ce){
+ce.textContent=count;
+}
+
+if(count===0){
+
+document.querySelector(
+'tbody'
+).innerHTML=
+'<tr><td colspan="7" class="empty">目前沒有訂單</td></tr>';
 
+}
 
-  /* =====================================================
-     刪除訂單
-     ===================================================== */
+}catch(e){
 
-  async function deleteOrder(
-    button
-  ){
+console.error(
+'刪除訂單錯誤：',
+e
+);
 
-    const orderNumber=
-      button.dataset.orderNumber;
+alert(
+e.message||
+'刪除訂單失敗，請稍後再試。'
+);
 
+button.disabled=false;
 
-    if(!orderNumber){
+button.textContent=
+'🗑️ 刪除';
 
-      alert(
-        '找不到訂單編號，無法刪除。'
-      );
+}
 
-      return;
-    }
+}
 
+document.addEventListener(
+'click',
+e=>{
 
-    const confirmed=
-      window.confirm(
-        '確定要刪除訂單 '+
-        orderNumber+
-        ' 嗎？\\\\n\\\\n'+
-        '刪除後會同步從 Supabase 移除，無法復原。'
-      );
+const b=
+e.target.closest(
+'.delete-btn'
+);
 
+if(b){
+del(b);
+}
 
-    if(!confirmed){
-
-      return;
-    }
-
-
-    button.disabled=true;
-
-    button.textContent=
-      '刪除中…';
-
-
-    try{
-
-      const r=
-        await fetch(
-          '/api/admin/orders/'+
-          encodeURIComponent(
-            orderNumber
-          )+
-          '?key='+
-          encodeURIComponent(
-            KEY
-          ),
-          {
-            method:
-              'DELETE',
-
-            headers:{
-              Accept:
-                'application/json'
-            },
-
-            cache:
-              'no-store'
-          }
-        );
-
-
-      const text=
-        await r.text();
-
-
-      let data={};
-
-
-      try{
-
-        data=
-          text
-            ? JSON.parse(text)
-            : {};
-
-      }catch{
-
-        data={};
-      }
-
-
-      if(
-        !r.ok||
-        !data.ok
-      ){
-
-        throw Error(
-          data.message||
-          (
-            '刪除失敗（HTTP '+
-            r.status+
-            '）'
-          )
-        );
-      }
-
-
-      /* ===============================================
-         刪除成功
-         直接從畫面移除
-         =============================================== */
-
-      const row=
-        button.closest(
-          'tr'
-        );
-
-
-      if(row){
-
-        row.remove();
-      }
-
-
-      /* ===============================================
-         更新訂單數量
-         =============================================== */
-
-      const count=
-        document.querySelectorAll(
-          'tbody tr[data-row]'
-        ).length;
-
-
-      const countElement=
-        document.getElementById(
-          'orderCount'
-        );
-
-
-      if(countElement){
-
-        countElement.textContent=
-          count;
-      }
-
-
-      /* ===============================================
-         沒有訂單
-         =============================================== */
-
-      if(
-        count===0
-      ){
-
-        document.querySelector(
-          'tbody'
-        ).innerHTML=
-          `
-<tr>
-
-<td
-  colspan="7"
-  class="empty"
->
-  目前沒有訂單
-</td>
-
-</tr>
-`;
-      }
-
-
-    }catch(e){
-
-      console.error(
-        '刪除訂單錯誤：',
-        e
-      );
-
-
-      alert(
-        e.message||
-        '刪除訂單失敗，請稍後再試。'
-      );
-
-
-      button.disabled=
-        false;
-
-      button.textContent=
-        '🗑️ 刪除';
-    }
-
-  }
-
-
-  /* =====================================================
-     重要：
-     不使用 onclick。
-     
-     直接監聽整個 document，
-     iPhone Safari 點擊也可以抓到。
-     ===================================================== */
-
-  document.addEventListener(
-    'click',
-    function(e){
-
-      const button=
-        e.target.closest(
-          '.delete-btn'
-        );
-
-
-      if(!button){
-
-        return;
-      }
-
-
-      deleteOrder(
-        button
-      );
-
-    }
-  );
+}
+);
 
 })();
 
 </script>
 
-
 </body>
 
 </html>
-
 `;
 
 }
 
+const server=
+http.createServer(
+async(req,res)=>{
 
-/* =========================================================
-   啟動
-   ========================================================= */
+try{
+
+const u=
+new URL(
+req.url,
+`http://${
+req.headers.host||
+'localhost'
+}`
+);
+
+if(
+req.method===
+'OPTIONS'
+){
+
+res.writeHead(
+204,
+{
+'Access-Control-Allow-Origin':'*',
+'Access-Control-Allow-Methods':
+'GET,POST,PUT,DELETE,OPTIONS',
+'Access-Control-Allow-Headers':
+'Content-Type'
+}
+);
+
+return res.end();
+}
+
+if(
+req.method==='GET'&&
+u.pathname===
+'/api/health'
+){
+
+return send(
+res,
+200,
+{
+ok:true,
+service:
+'Pharmacists Tea House',
+
+supabase:
+hasSupabase(),
+
+telegram:
+Boolean(
+process.env.TELEGRAM_BOT_TOKEN&&
+process.env.TELEGRAM_CHAT_ID
+)
+}
+);
+}
+
+if(
+req.method==='POST'&&
+u.pathname===
+'/api/orders'
+){
+
+const b=
+await body(req);
+
+const c=
+b.customer||{};
+
+const items=
+Array.isArray(b.items)
+?b.items
+:[];
+
+const name=
+String(
+c.name||
+b.customer_name||
+''
+)
+.trim()
+.slice(0,50);
+
+const phone=
+String(
+c.phone||
+b.customer_phone||
+''
+)
+.trim()
+.slice(0,30);
+
+const pickup=
+String(
+c.pickupDateTime||
+c.pickup_time||
+b.pickup_time||
+''
+)
+.trim()
+.slice(0,50);
+
+const invoice=
+String(
+b.invoiceNumber??
+b.invoice_number??
+c.invoiceNumber??
+c.invoice_number??
+''
+)
+.trim()
+.slice(0,30);
+
+const note=
+String(
+c.note??
+c.notes??
+b.notes??
+''
+)
+.trim()
+.slice(0,300);
+
+if(
+!name||
+!phone||
+!pickup||
+!items.length
+){
+
+return send(
+res,
+400,
+{
+ok:false,
+message:
+'請填寫姓名、電話、取餐時間並至少選一杯茶。'
+}
+);
+}
+
+const bag1=
+Math.max(
+0,
+num(
+b.bag1Count??
+b.bag_1_count
+)
+);
+
+const bag2=
+Math.max(
+0,
+num(
+b.bag2Count??
+b.bag_2_count
+)
+);
+
+const total=
+items.reduce(
+(sum,i)=>
+sum+
+num(i.price)*
+num(i.quantity),
+0
+)+
+bag1+
+bag2*2;
+
+const orderNumber=
+Date.now();
+
+const id=
+`T${
+orderNumber
+.toString(36)
+.toUpperCase()
+}${
+crypto
+.randomBytes(2)
+.toString('hex')
+.toUpperCase()
+}`;
+
+const order={
+
+id,
+
+orderNumber,
+
+createdAt:
+new Date()
+.toISOString(),
+
+status:
+'new',
+
+customer:{
+name,
+phone,
+pickupDateTime:
+pickup,
+invoiceNumber:
+invoice,
+note
+},
+
+items,
+
+bag1Count:
+bag1,
+
+bag2Count:
+bag2,
+
+total
+};
+
+let saved;
+
+try{
+
+saved=
+await supabase(
+'orders',
+{
+method:'POST',
+
+body:{
+
+order_number:
+orderNumber,
+
+customer_name:
+name,
+
+customer_phone:
+phone,
+
+items,
+
+total_amount:
+Math.round(total),
+
+invoice_number:
+invoice||
+null,
+
+shopping_bag:
+!!(
+bag1||
+bag2
+),
+
+bag1_count:
+bag1,
+
+bag2_count:
+bag2,
+
+pickup_time:
+pickup||
+null,
+
+notes:
+note||
+null,
+
+order_status:
+'new'
+
+}
+}
+);
+
+}catch(e){
+
+console.error(
+'Supabase 寫入失敗',
+e
+);
+
+return send(
+res,
+500,
+{
+ok:false,
+message:
+'訂單無法寫入雲端資料庫，請稍後再試。'
+}
+);
+
+}
+
+try{
+
+const a=
+readOrders();
+
+a.unshift(order);
+
+writeOrders(a);
+
+}catch(e){
+
+console.error(
+'本機備份失敗',
+e
+);
+
+}
+
+try{
+
+await notify(order);
+
+}catch(e){
+
+console.error(
+'Telegram 通知失敗',
+e.message
+);
+
+}
+
+return send(
+res,
+201,
+{
+ok:true,
+
+orderId:
+id,
+
+orderNumber,
+
+total,
+
+supabase:true,
+
+supabaseOrderId:
+Array.isArray(saved)
+?saved[0]?.id
+:saved?.id||
+null
+}
+);
+
+}
+
+if(
+req.method==='GET'&&
+/^\/api\/orders\/[^/]+$/.test(
+u.pathname
+)
+){
+
+if(!hasSupabase()){
+
+return send(
+res,
+503,
+{
+ok:false,
+message:
+'Supabase 尚未設定'
+}
+);
+
+}
+
+const n=
+u.pathname
+.split('/')
+.pop();
+
+const row=
+await getOrder(n);
+
+if(!row){
+
+return send(
+res,
+404,
+{
+ok:false,
+message:
+'找不到訂單'
+}
+);
+
+}
+
+return send(
+res,
+200,
+{
+ok:true,
+order:
+normalize(row)
+}
+);
+
+}
+
+if(
+req.method==='DELETE'&&
+/^\/api\/admin\/orders\/[^/]+$/.test(
+u.pathname
+)
+){
+
+if(
+u.searchParams.get('key')!==
+adminKey()
+){
+
+return send(
+res,
+401,
+{
+ok:false,
+message:
+'Unauthorized'
+}
+);
+
+}
+
+const n=
+u.pathname
+.split('/')
+.pop();
+
+if(
+!Number.isFinite(
+Number(n)
+)
+){
+
+return send(
+res,
+400,
+{
+ok:false,
+message:
+'訂單編號格式錯誤'
+}
+);
+
+}
+
+if(!hasSupabase()){
+
+return send(
+res,
+503,
+{
+ok:false,
+message:
+'Supabase 尚未設定'
+}
+);
+
+}
+
+try{
+
+const deleted=
+await deleteOrder(n);
+
+const local=
+deleteLocal(n);
+
+return send(
+res,
+200,
+{
+ok:true,
+
+orderNumber:
+num(n),
+
+deletedFromSupabase:
+Array.isArray(deleted)
+?deleted.length
+:0,
+
+deletedFromLocalBackup:
+local
+}
+);
+
+}catch(e){
+
+console.error(
+'刪除訂單錯誤',
+e
+);
+
+return send(
+res,
+500,
+{
+ok:false,
+message:
+e.message||
+'刪除訂單失敗'
+}
+);
+
+}
+
+}
+
+if(
+req.method==='PUT'&&
+/^\/api\/orders\/[^/]+\/status$/.test(
+u.pathname
+)
+){
+
+const n=
+u.pathname
+.split('/')[3];
+
+const b=
+await body(req);
+
+const row=
+await statusOrder(
+n,
+String(
+b.status||
+''
+).trim()
+);
+
+if(!row){
+
+return send(
+res,
+404,
+{
+ok:false,
+message:
+'找不到訂單'
+}
+);
+
+}
+
+return send(
+res,
+200,
+{
+ok:true,
+order:
+normalize(row)
+}
+);
+
+}
+
+if(
+req.method==='GET'&&
+u.pathname===
+'/admin'
+){
+
+if(
+u.searchParams.get('key')!==
+adminKey()
+){
+
+return send(
+res,
+401,
+'Unauthorized',
+'text/plain; charset=utf-8'
+);
+
+}
+
+let rows=[];
+
+if(
+hasSupabase()
+){
+
+try{
+
+rows=
+await getOrders();
+
+}catch(e){
+
+console.error(
+'Supabase 讀取失敗',
+e
+);
+
+return send(
+res,
+503,
+{
+ok:false,
+message:
+'Supabase 讀取失敗，為避免顯示舊備份訂單，後台暫時無法顯示訂單。請稍後重新整理。'
+}
+);
+
+}
+
+}else{
+
+rows=
+localAsRows();
+
+}
+
+return send(
+res,
+200,
+adminHtml(
+rows,
+u.searchParams.get('key')||''
+),
+'text/html; charset=utf-8'
+);
+
+}
+
+if(
+req.method==='GET'
+){
+
+const file=
+safeFile(
+u.pathname
+);
+
+if(!file){
+
+return send(
+res,
+403,
+'Forbidden',
+'text/plain; charset=utf-8'
+);
+
+}
+
+fs.stat(
+file,
+(e,s)=>{
+
+if(
+e||
+!s.isFile()
+){
+
+return send(
+res,
+404,
+'Not Found',
+'text/plain; charset=utf-8'
+);
+
+}
+
+const ext=
+path.extname(
+file
+).toLowerCase();
+
+const types={
+
+'.html':
+'text/html; charset=utf-8',
+
+'.css':
+'text/css; charset=utf-8',
+
+'.js':
+'text/javascript; charset=utf-8',
+
+'.json':
+'application/json; charset=utf-8',
+
+'.svg':
+'image/svg+xml',
+
+'.jpg':
+'image/jpeg',
+
+'.jpeg':
+'image/jpeg',
+
+'.png':
+'image/png',
+
+'.webp':
+'image/webp',
+
+'.ico':
+'image/x-icon'
+
+};
+
+res.writeHead(
+200,
+{
+'Content-Type':
+types[ext]||
+'application/octet-stream',
+
+'Cache-Control':
+'no-cache'
+}
+);
+
+fs.createReadStream(
+file
+).pipe(res);
+
+}
+);
+
+return;
+
+}
+
+return send(
+res,
+404,
+'Not Found',
+'text/plain; charset=utf-8'
+);
+
+}catch(e){
+
+console.error(
+'SERVER ERROR',
+e
+);
+
+return send(
+res,
+500,
+{
+ok:false,
+message:
+e.message||
+'伺服器錯誤'
+}
+);
+
+}
+
+}
+);
 
 server.listen(
-  PORT,
-  ()=>{
+PORT,
+()=>{
 
-    console.log(
-      `Tea House ordering system running on port ${PORT}`
-    );
+console.log(
+`Tea House ordering system running on port ${PORT}`
+);
 
-    console.log(
-      `Supabase enabled: ${
-        hasSupabase()
-      }`
-    );
+console.log(
+`Supabase enabled: ${
+hasSupabase()
+}`
+);
 
-    console.log(
-      `Telegram enabled: ${
-        Boolean(
-          process.env.TELEGRAM_BOT_TOKEN&&
-          process.env.TELEGRAM_CHAT_ID
-        )
-      }`
-    );
-  }
+console.log(
+`Telegram enabled: ${
+Boolean(
+process.env.TELEGRAM_BOT_TOKEN&&
+process.env.TELEGRAM_CHAT_ID
+)
+}`
+);
+
+}
 );
