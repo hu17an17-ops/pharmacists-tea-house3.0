@@ -1,2888 +1,669 @@
 <!doctype html>
 <html lang="zh-Hant">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>藥師的私房紅茶｜線上點餐</title>
+  <meta charset="utf-8">
 
-<style>
-:root{
-  --red:#8f1d1d;
-  --red2:#b52b24;
-  --cream:#fffaf2;
-  --paper:#fffdf9;
-  --ink:#30241e;
-  --muted:#7b6d63;
-  --line:#eadbca;
-  --gold:#b9854a;
-  --green:#4c8b64;
-}
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
 
-*{
-  box-sizing:border-box;
-}
+  <meta
+    name="theme-color"
+    content="#963028"
+  >
 
-body{
-  margin:0;
-  background:linear-gradient(#fffaf3,#fff);
-  color:var(--ink);
-  font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC",sans-serif;
-}
+  <title>藥師的私房紅茶｜線上點餐</title>
 
-header{
-  background:rgba(255,250,243,.96);
-  backdrop-filter:blur(12px);
-  position:sticky;
-  top:0;
-  z-index:30;
-  border-bottom:1px solid var(--line);
-}
-
-.top{
-  max-width:1240px;
-  margin:auto;
-  padding:10px 18px;
-  display:flex;
-  align-items:center;
-  gap:18px;
-}
-
-.logo{
-  width:76px;
-  height:76px;
-  border-radius:50%;
-  object-fit:cover;
-  border:3px solid white;
-  box-shadow:0 2px 12px #0001;
-}
-
-.brand{
-  font-family:serif;
-  font-size:28px;
-  font-weight:900;
-  color:var(--red);
-  line-height:1;
-}
-
-.brand small{
-  display:block;
-  color:var(--muted);
-  font:12px sans-serif;
-  margin-top:6px;
-  letter-spacing:2px;
-}
-
-.search{
-  margin-left:auto;
-  width:min(360px,40vw);
-  border:1px solid var(--line);
-  background:#fff;
-  border-radius:999px;
-  padding:11px 16px;
-  outline:none;
-}
-
-.cartTop{
-  background:var(--red);
-  color:#fff;
-  border:0;
-  border-radius:999px;
-  padding:11px 16px;
-  font-weight:800;
-  cursor:pointer;
-}
-
-.info{
-  max-width:1240px;
-  margin:16px auto;
-  padding:0 18px;
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:14px;
-}
-
-.infoCard{
-  background:white;
-  border:1px solid var(--line);
-  border-radius:15px;
-  padding:13px 18px;
-}
-
-.pill{
-  display:inline-block;
-  background:var(--red);
-  color:#fff;
-  border-radius:999px;
-  padding:5px 12px;
-  font-size:12px;
-  font-weight:800;
-  margin-bottom:8px;
-}
-
-.infoCard b{
-  font-size:15px;
-}
-
-.infoCard span{
-  color:var(--muted);
-  font-size:13px;
-}
-
-.layout{
-  max-width:1240px;
-  margin:auto;
-  padding:0 18px 20px;
-  display:grid;
-  grid-template-columns:180px 1fr 360px;
-  gap:18px;
-}
-
-.side{
-  position:sticky;
-  top:105px;
-  height:max-content;
-}
-
-.side button{
-  display:block;
-  width:100%;
-  border:0;
-  background:transparent;
-  text-align:left;
-  padding:13px 15px;
-  border-radius:12px;
-  color:var(--muted);
-  font-weight:800;
-  cursor:pointer;
-}
-
-.side button.active,
-.side button:hover{
-  background:#f4e3d1;
-  color:var(--red);
-}
-
-.section{
-  margin-bottom:27px;
-}
-
-.section h2{
-  font-family:serif;
-  font-size:25px;
-  color:var(--red);
-  margin:4px 0 12px;
-  border-bottom:1px solid var(--line);
-  padding-bottom:8px;
-}
-
-.section h2 small{
-  font:13px sans-serif;
-  color:var(--muted);
-  margin-left:7px;
-}
-
-.grid{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:11px;
-}
-
-.item{
-  background:white;
-  border:1px solid var(--line);
-  border-radius:13px;
-  padding:11px;
-  display:grid;
-  grid-template-columns:68px 1fr;
-  gap:10px;
-  align-items:center;
-  transition:.15s;
-}
-
-.item:hover{
-  box-shadow:0 8px 25px #5a2a1b12;
-  transform:translateY(-1px);
-}
-
-.drink{
-  width:68px;
-  height:78px;
-  border-radius:10px;
-  object-fit:cover;
-  background:#f3e7d8;
-}
-
-.item h3{
-  font-family:serif;
-  margin:0 0 4px;
-  font-size:17px;
-}
-
-.desc{
-  font-size:11px;
-  color:var(--muted);
-  min-height:30px;
-  line-height:1.45;
-}
-
-.itemBottom{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin-top:7px;
-}
-
-.price{
-  color:var(--red);
-  font-weight:900;
-  font-size:17px;
-}
-
-.add{
-  background:var(--red);
-  color:#fff;
-  border:0;
-  border-radius:8px;
-  padding:6px 10px;
-  font-size:17px;
-  cursor:pointer;
-}
-
-.cart{
-  position:sticky;
-  top:105px;
-  height:max-content;
-  background:white;
-  border:1px solid var(--line);
-  border-radius:16px;
-  overflow:hidden;
-  box-shadow:0 10px 30px #4b251210;
-}
-
-.cartHead{
-  background:var(--red);
-  color:#fff;
-  padding:15px 17px;
-  font-family:serif;
-  font-size:21px;
-}
-
-.empty{
-  text-align:center;
-  color:#b6aaa0;
-  padding:45px 15px;
-}
-
-.cartList{
-  max-height:330px;
-  overflow:auto;
-}
-
-.cartItem{
-  padding:13px 15px;
-  border-bottom:1px solid #f1e8de;
-}
-
-.cartName{
-  font-weight:800;
-}
-
-.opt{
-  font-size:11px;
-  color:var(--muted);
-  margin:4px 0;
-}
-
-.qrow{
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-
-.qrow button{
-  width:27px;
-  height:27px;
-  border:1px solid var(--line);
-  background:#fff;
-  border-radius:7px;
-  cursor:pointer;
-}
-
-.qrow b{
-  margin-left:auto;
-  color:var(--red);
-}
-
-.remove{
-  border:0;
-  background:none;
-  color:#aaa;
-  cursor:pointer;
-}
-
-.options{
-  padding:15px;
-  border-top:1px solid var(--line);
-}
-
-.options h3{
-  font-family:serif;
-  color:var(--red);
-  font-size:16px;
-  margin:0 0 9px;
-}
-
-.chips{
-  display:flex;
-  flex-wrap:wrap;
-  gap:7px;
-  margin-bottom:13px;
-}
-
-.chip{
-  border:1px solid #d9bca8;
-  background:#fff8f1;
-  color:var(--ink);
-  border-radius:8px;
-  padding:7px 10px;
-  cursor:pointer;
-}
-
-.chip.selected{
-  background:var(--red);
-  color:#fff;
-  border-color:var(--red);
-}
-
-.summary{
-  border-top:1px solid var(--line);
-  padding:14px;
-}
-
-.sum,
-.total{
-  display:flex;
-  justify-content:space-between;
-  margin:7px 0;
-}
-
-.sum{
-  color:var(--muted);
-}
-
-.total{
-  font-size:21px;
-  font-weight:900;
-  color:var(--red);
-  margin-top:12px;
-}
-
-.checkout{
-  width:100%;
-  border:0;
-  border-radius:10px;
-  padding:13px;
-  background:var(--red);
-  color:#fff;
-  font-size:16px;
-  font-weight:900;
-  cursor:pointer;
-}
-
-.checkout:disabled{
-  background:#ccc;
-  cursor:not-allowed;
-}
-
-.bottom{
-  max-width:1240px;
-  margin:10px auto 0;
-  padding:0 18px 20px;
-  display:grid;
-  grid-template-columns:1.3fr 1fr 1fr;
-  gap:15px;
-}
-
-.bottomCard{
-  background:white;
-  border:1px solid var(--line);
-  border-radius:15px;
-  padding:15px;
-}
-
-.bottomCard h3{
-  color:var(--red);
-  font-family:serif;
-  margin:0 0 9px;
-}
-
-.bottomCard p,
-.bottomCard li{
-  font-size:12px;
-  color:var(--muted);
-  line-height:1.7;
-}
-
-.bottomCard ul{
-  margin:0;
-  padding-left:18px;
-}
-
-.cash{
-  font-size:18px!important;
-  color:var(--green)!important;
-  font-weight:900;
-}
-
-footer{
-  background:var(--red);
-  color:#fff;
-  padding:13px 18px;
-}
-
-.foot{
-  max-width:1240px;
-  margin:auto;
-  display:flex;
-  justify-content:space-between;
-  font-size:12px;
-}
-
-.modal{
-  position:fixed;
-  inset:0;
-  background:#28140c88;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  padding:16px;
-  z-index:60;
-}
-
-.modal.open{
-  display:flex;
-}
-
-.panel{
-  background:var(--cream);
-  width:min(560px,100%);
-  max-height:90vh;
-  overflow:auto;
-  border-radius:18px;
-  padding:22px;
-}
-
-.panel h2{
-  font-family:serif;
-  color:var(--red);
-  margin:0 0 14px;
-}
-
-.form{
-  display:grid;
-  gap:8px;
-}
-
-.form label{
-  font-weight:800;
-  font-size:13px;
-}
-
-.form input,
-.form textarea{
-  border:1px solid var(--line);
-  border-radius:9px;
-  padding:10px;
-  background:#fff;
-  outline:none;
-}
-
-.actions{
-  display:flex;
-  gap:9px;
-  margin-top:15px;
-}
-
-.actions button{
-  flex:1;
-  border:1px solid var(--line);
-  border-radius:10px;
-  padding:12px;
-  cursor:pointer;
-}
-
-.primary{
-  background:var(--red)!important;
-  color:#fff;
-  border-color:var(--red)!important;
-}
-
-.toast{
-  position:fixed;
-  left:50%;
-  bottom:22px;
-  transform:translate(-50%,30px);
-  background:#2d211b;
-  color:#fff;
-  padding:10px 18px;
-  border-radius:99px;
-  opacity:0;
-  transition:.25s;
-  z-index:100;
-}
-
-.toast.show{
-  opacity:1;
-  transform:translate(-50%,0);
-}
-
-
-/* =========================================================
-   客人訂單確認頁
-   ========================================================= */
-
-.order-confirm-page{
-  position:fixed;
-  inset:0;
-  z-index:9999;
-  background:
-    linear-gradient(
-      180deg,
-      #fffaf3 0%,
-      #ffffff 100%
-    );
-  overflow-y:auto;
-  display:none;
-  padding:18px 14px 35px;
-}
-
-.order-confirm-page.show{
-  display:block;
-}
-
-.order-confirm-inner{
-  width:min(620px,100%);
-  margin:0 auto;
-}
-
-.order-confirm-header{
-  text-align:center;
-  padding:18px 8px 16px;
-}
-
-.order-confirm-logo{
-  font-size:38px;
-  margin-bottom:5px;
-}
-
-.order-confirm-header h1{
-  margin:0;
-  color:var(--red);
-  font-family:serif;
-  font-size:29px;
-  font-weight:900;
-}
-
-.order-confirm-header p{
-  margin:7px 0 0;
-  color:var(--muted);
-  font-size:14px;
-}
-
-.confirm-success{
-  background:#eaf7ed;
-  border:2px solid #b8dfc0;
-  color:#28643a;
-  border-radius:18px;
-  padding:17px 18px;
-  margin-bottom:13px;
-  text-align:center;
-}
-
-.confirm-success-title{
-  font-size:24px;
-  font-weight:900;
-  margin-bottom:5px;
-}
-
-.confirm-success-text{
-  font-size:14px;
-  line-height:1.6;
-}
-
-.confirm-card{
-  background:#fff;
-  border:1px solid var(--line);
-  border-radius:18px;
-  overflow:hidden;
-  box-shadow:0 8px 28px rgba(76,42,25,.10);
-  margin-bottom:13px;
-}
-
-.confirm-card-title{
-  background:#f5e8d8;
-  color:#68372d;
-  font-family:serif;
-  font-weight:900;
-  font-size:19px;
-  padding:13px 16px;
-}
-
-.confirm-info{
-  padding:15px 16px;
-  display:grid;
-  gap:12px;
-}
-
-.confirm-info-row{
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:12px;
-  border-bottom:1px dashed #eadbca;
-  padding-bottom:10px;
-}
-
-.confirm-info-row:last-child{
-  border-bottom:0;
-  padding-bottom:0;
-}
-
-.confirm-label{
-  color:var(--muted);
-  font-size:14px;
-  flex-shrink:0;
-}
-
-.confirm-value{
-  text-align:right;
-  font-weight:800;
-  font-size:16px;
-  word-break:break-word;
-}
-
-.confirm-order-number{
-  color:var(--red);
-  font-size:20px;
-  font-weight:900;
-  letter-spacing:.5px;
-}
-
-.confirm-pickup{
-  color:#24753c;
-  font-size:19px;
-  font-weight:900;
-}
-
-.confirm-items{
-  padding:5px 16px 8px;
-}
-
-.confirm-item{
-  padding:13px 0;
-  border-bottom:1px solid #f0e5da;
-}
-
-.confirm-item:last-child{
-  border-bottom:0;
-}
-
-.confirm-item-main{
-  display:flex;
-  justify-content:space-between;
-  gap:12px;
-  font-size:16px;
-}
-
-.confirm-item-name{
-  font-weight:800;
-}
-
-.confirm-item-price{
-  color:var(--red);
-  font-weight:900;
-  white-space:nowrap;
-}
-
-.confirm-item-option{
-  color:var(--muted);
-  font-size:13px;
-  margin-top:5px;
-}
-
-.confirm-bag{
-  padding:14px 16px;
-  font-size:15px;
-  line-height:1.8;
-}
-
-.confirm-total{
-  background:#fff8ef;
-  border-top:1px solid var(--line);
-  padding:17px 16px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-
-.confirm-total-label{
-  font-size:17px;
-  font-weight:800;
-}
-
-.confirm-total-price{
-  color:var(--red);
-  font-size:28px;
-  font-weight:900;
-}
-
-.screenshot-warning{
-  background:
-    linear-gradient(
-      135deg,
-      #fff1d7,
-      #fff8ec
-    );
-  border:3px solid #d88a20;
-  border-radius:20px;
-  padding:21px 18px;
-  margin-top:15px;
-  box-shadow:
-    0 5px 0 #d88a20,
-    0 10px 28px rgba(150,87,15,.16);
-}
-
-.screenshot-warning-title{
-  color:#9a4e0b;
-  font-size:23px;
-  font-weight:900;
-  text-align:center;
-  margin-bottom:11px;
-}
-
-.screenshot-warning-main{
-  background:#fff;
-  border-radius:14px;
-  padding:14px 12px;
-  color:#4c3020;
-  text-align:center;
-  font-size:18px;
-  font-weight:900;
-  line-height:1.6;
-}
-
-.screenshot-warning-main .camera{
-  font-size:31px;
-  display:block;
-  margin-bottom:4px;
-}
-
-.screenshot-warning-text{
-  margin-top:13px;
-  color:#654a39;
-  font-size:14px;
-  line-height:1.75;
-  text-align:center;
-}
-
-.show-order-again{
-  width:100%;
-  margin-top:15px;
-  border:0;
-  border-radius:13px;
-  padding:14px;
-  background:var(--red);
-  color:#fff;
-  font-size:16px;
-  font-weight:900;
-  cursor:pointer;
-}
-
-.confirm-footer{
-  text-align:center;
-  color:var(--muted);
-  font-size:12px;
-  line-height:1.7;
-  padding:17px 5px 0;
-}
-
-
-/* =========================================================
-   手機版訂單確認頁
-   ========================================================= */
-
-@media(max-width:650px){
-
-  .top{
-    padding:8px 12px;
-  }
-
-  .logo{
-    width:58px;
-    height:58px;
-  }
-
-  .brand{
-    font-size:22px;
-  }
-
-  .search{
-    display:none;
-  }
-
-  .info{
-    grid-template-columns:1fr;
-    padding:0 12px;
-  }
-
-  .layout{
-    display:block;
-    padding:0 12px;
-  }
-
-  .side{
-    position:static;
-    display:flex;
-    overflow:auto;
-    margin-bottom:12px;
-  }
-
-  .side button{
-    white-space:nowrap;
-    width:auto;
-  }
-
-  .cart{
-    width:calc(100% - 24px);
-  }
-
-  .bottom{
-    padding:0 12px;
-  }
-
-  .foot{
-    flex-direction:column;
-    gap:4px;
-  }
-
-  .item{
-    grid-template-columns:62px 1fr;
-  }
-
-  .drink{
-    width:62px;
-    height:72px;
-  }
-
-  .order-confirm-page{
-    padding:8px 10px 25px;
-  }
-
-  .order-confirm-header{
-    padding:12px 5px 13px;
-  }
-
-  .order-confirm-logo{
-    font-size:32px;
-  }
-
-  .order-confirm-header h1{
-    font-size:25px;
-  }
-
-  .confirm-success-title{
-    font-size:22px;
-  }
-
-  .confirm-order-number{
-    font-size:18px;
-  }
-
-  .confirm-pickup{
-    font-size:18px;
-  }
-
-  .screenshot-warning-title{
-    font-size:21px;
-  }
-
-  .screenshot-warning-main{
-    font-size:17px;
-  }
-
-  .confirm-total-price{
-    font-size:25px;
-  }
-}
-</style>
+  <link rel="stylesheet" href="/style.css">
 </head>
+
 
 <body>
 
-<header>
-  <div class="top">
 
-    <div class="logo"
-         style="
-         display:flex;
-         align-items:center;
-         justify-content:center;
-         background:#8f1d1d;
-         color:#fff;
-         font-size:30px;
-         ">
-      🍵
-    </div>
+<header class="hero">
 
-    <div class="brand">
-      藥師的私房紅茶
-      <small>PHARMACISTS TEA HOUSE</small>
-    </div>
+  <img
+    class="hero-banner"
+    src="/hero-banner.jpg"
+    alt="藥師的私房紅茶｜營業時間與到店自取資訊"
+  >
 
-    <input
-      id="search"
-      class="search"
-      placeholder="搜尋飲品..."
-    >
-
-    <button class="cartTop">
-      🛒 <span id="topCount">0</span>
-    </button>
-
-  </div>
 </header>
 
 
-<section class="info">
 
-  <div class="infoCard">
-    <span class="pill">營業時間</span><br>
-    <b>週三－週日 11:00－22:00</b>
-  </div>
-
-  <div class="infoCard">
-    <span class="pill">店家資訊</span><br>
-    <b>📍 700 臺南市中西區小西門里府前路一段373號</b><br>
-    <span>☎ 06-2135250</span>
-  </div>
-
-</section>
+<main>
 
 
-<main class="layout">
+  <section class="pickup">
 
-  <aside class="side" id="nav"></aside>
 
-  <div id="menu"></div>
-
-  <aside class="cart">
-
-    <div class="cartHead">
-      🛒 我的訂單
-      <span id="cartCount">(0)</span>
+    <div
+      class="pickup-icon"
+      aria-hidden="true"
+    >
+      <span>⌖</span>
     </div>
 
-    <div id="cartList" class="cartList">
-      <div class="empty">
-        尚未選擇任何飲品<br>
-        快去選購喜歡的飲品吧！🍵
+
+
+    <div class="pickup-copy">
+
+
+      <div class="pickup-title-row">
+
+        <h2>到店自取</h2>
+
+        <span class="pickup-badge">
+          僅收現金
+        </span>
+
       </div>
-    </div>
 
-    <div class="options">
 
-      <h3>冰度選擇</h3>
-      <div class="chips" id="iceChips"></div>
+      <p>
+        700 臺南市中西區小西門里府前路一段373號
+      </p>
 
-      <h3>甜度選擇</h3>
-      <div class="chips" id="sweetChips"></div>
+
+      <a href="tel:062135250">
+        06-2135250
+      </a>
+
 
     </div>
 
-    <div class="summary">
 
-      <div class="sum">
-        <span>小計</span>
-        <b id="subtotal">$0</b>
-      </div>
 
-      <div class="sum">
-        <span>總杯數</span>
-        <b id="cups">0 杯</b>
-      </div>
+    <div
+      class="store-mark"
+      aria-hidden="true"
+    >
 
-      <div class="total">
-        <span>總金額</span>
-        <span id="total">$0</span>
-      </div>
+      <span class="store-roof"></span>
 
-      <button
-        class="checkout"
-        id="checkout"
-        disabled
-        onclick="openCheckout()">
-        選擇商品
-      </button>
+      <span class="store-body"></span>
 
     </div>
 
-  </aside>
+
+  </section>
+
+
+
+  <nav
+    class="tabs"
+    aria-label="商品分類"
+  >
+
+
+    <button
+      class="active"
+      data-filter="全部"
+    >
+      全部
+    </button>
+
+
+    <button
+      data-filter="紅茶系列"
+    >
+      紅茶系列
+    </button>
+
+
+    <button
+      data-filter="鮮奶茶系列"
+    >
+      鮮奶茶系列
+    </button>
+
+
+  </nav>
+
+
+
+  <section>
+
+
+    <h2 class="section-title">
+      紅茶系列
+    </h2>
+
+
+    <div
+      id="blackTea"
+      class="grid"
+    ></div>
+
+
+  </section>
+
+
+
+  <section>
+
+
+    <h2 class="section-title">
+      鮮奶茶系列
+    </h2>
+
+
+    <div
+      id="milkTea"
+      class="grid"
+    ></div>
+
+
+  </section>
+
+
+
+  <section>
+
+
+    <h2 class="section-title">
+      戰豆奶茶
+    </h2>
+
+
+    <div
+      id="soyTea"
+      class="grid"
+    ></div>
+
+
+  </section>
+
 
 </main>
 
 
-<section class="bottom">
 
-  <div class="bottomCard">
-    <h3>備注</h3>
-    <ul>
-      <li>本店飲品皆為現點現做，請耐心等候。</li>
-      <li>請確認冰甜度，點選後恕不接受更改。</li>
-      <li>如需大量訂購，請提前來電預約。</li>
-      <li>本店保留因活動內容或供應狀況調整之權利。</li>
-      <li>飲品製作完成後，請依現場叫號取餐。</li>
-    </ul>
-  </div>
-
-  <div class="bottomCard">
-    <h3>統一編號</h3>
-    <p>
-      統一編號：
-      <b>請填入您的統編</b>
-    </p>
-    <p>
-      如需載具或發票，請於取餐前告知店家。
-    </p>
-  </div>
-
-  <div class="bottomCard">
-    <h3>付款方式</h3>
-    <p class="cash">
-      💵 僅收現金
-    </p>
-    <p>
-      本線上點餐系統僅提供到店自取，
-      不提供信用卡、LINE Pay 或其他電子支付。
-    </p>
-  </div>
-
-</section>
-
-
-<footer>
-  <div class="foot">
-    <span>🍃 藥師的私房紅茶</span>
-    <span>
-      700 臺南市中西區小西門里府前路一段373號
-      ｜06-2135250
-    </span>
-    <span>週三－週日 11:00－22:00</span>
-  </div>
-</footer>
-
-
-<div class="modal" id="modal">
-  <div class="panel" id="panel"></div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-
-<!-- =========================================================
-     原本訂單狀態區
-     ========================================================= -->
-
-<div
-  id="orderStatus"
-  style="
-  display:none;
-  position:fixed;
-  left:12px;
-  right:12px;
-  bottom:18px;
-  z-index:9998;
-  background:#fffaf4;
-  border:1px solid #e5d7c8;
-  border-radius:18px;
-  padding:16px;
-  box-shadow:0 10px 35px rgba(0,0,0,.16);
-  "
+<button
+  id="cartButton"
+  class="cart-button"
+  aria-label="查看訂單"
 >
 
-  <div
-    style="
-    font-weight:800;
-    color:#8f2f27;
-    font-size:18px;
-    margin-bottom:6px;
-    ">
-    🍵 我的訂單
-  </div>
 
-  <div
-    id="orderStatusText"
-    style="
-    color:#4d4038;
-    line-height:1.6;
-    ">
-  </div>
+  <span class="cart-icon">
+    🛒
+  </span>
 
-</div>
 
+  <b id="cartCount">
+    0
+  </b>
 
-<!-- =========================================================
-     全新的「訂單確認／取餐憑證」頁面
-     ========================================================= -->
 
-<div
-  id="orderConfirmPage"
-  class="order-confirm-page"
->
+  <span>
+    查看訂單
+  </span>
 
-  <div class="order-confirm-inner">
 
-    <div class="order-confirm-header">
+</button>
 
-      <div class="order-confirm-logo">
-        🍵
-      </div>
 
-      <h1>
-        藥師的私房紅茶
-      </h1>
 
-      <p>
-        線上訂單確認／取餐憑證
-      </p>
+<dialog id="cartDialog">
 
-    </div>
 
-
-    <div class="confirm-success">
-
-      <div class="confirm-success-title">
-        🎉 訂單已成功送出！
-      </div>
-
-      <div class="confirm-success-text">
-        請確認以下訂單資料，並保留此畫面。
-      </div>
-
-    </div>
-
-
-    <!-- 訂單基本資料 -->
-
-    <div class="confirm-card">
-
-      <div class="confirm-card-title">
-        📋 訂單資訊
-      </div>
-
-      <div class="confirm-info">
-
-        <div class="confirm-info-row">
-
-          <span class="confirm-label">
-            訂單編號
-          </span>
-
-          <span
-            id="confirmOrderNumber"
-            class="confirm-value confirm-order-number">
-          </span>
-
-        </div>
-
-
-        <div class="confirm-info-row">
-
-          <span class="confirm-label">
-            取餐時間
-          </span>
-
-          <span
-            id="confirmPickupTime"
-            class="confirm-value confirm-pickup">
-          </span>
-
-        </div>
-
-
-        <div class="confirm-info-row">
-
-          <span class="confirm-label">
-            取餐方式
-          </span>
-
-          <span class="confirm-value">
-            到店自取
-          </span>
-
-        </div>
-
-
-        <div class="confirm-info-row">
-
-          <span class="confirm-label">
-            付款方式
-          </span>
-
-          <span class="confirm-value">
-            現場現金付款
-          </span>
-
-        </div>
-
-      </div>
-
-    </div>
-
-
-    <!-- 訂購內容 -->
-
-    <div class="confirm-card">
-
-      <div class="confirm-card-title">
-        🧋 訂購內容
-      </div>
-
-      <div
-        id="confirmItems"
-        class="confirm-items">
-      </div>
-
-    </div>
-
-
-    <!-- 購物袋 -->
-
-    <div
-      id="confirmBagCard"
-      class="confirm-card"
-      style="display:none;"
-    >
-
-      <div class="confirm-card-title">
-        🛍️ 購物袋
-      </div>
-
-      <div
-        id="confirmBag"
-        class="confirm-bag">
-      </div>
-
-    </div>
-
-
-    <!-- 備註 -->
-
-    <div
-      id="confirmNoteCard"
-      class="confirm-card"
-      style="display:none;"
-    >
-
-      <div class="confirm-card-title">
-        📝 訂單備註
-      </div>
-
-      <div
-        id="confirmNote"
-        class="confirm-bag">
-      </div>
-
-    </div>
-
-
-    <!-- 總金額 -->
-
-    <div class="confirm-card">
-
-      <div class="confirm-total">
-
-        <span class="confirm-total-label">
-          💰 訂單合計
-        </span>
-
-        <span
-          id="confirmTotal"
-          class="confirm-total-price">
-          $0
-        </span>
-
-      </div>
-
-    </div>
-
-
-    <!-- =====================================================
-         非常醒目的截圖提醒
-         ===================================================== -->
-
-    <div class="screenshot-warning">
-
-      <div class="screenshot-warning-title">
-        ⚠️ 請務必注意
-      </div>
-
-      <div class="screenshot-warning-main">
-
-        <span class="camera">
-          📸
-        </span>
-
-        請立即截圖或保存此訂單畫面！
-
-      </div>
-
-      <div class="screenshot-warning-text">
-
-        到店取餐時，<strong>請向店員出示訂單編號</strong>。<br>
-
-        請依照訂單編號到店取餐，<br>
-
-        並於現場以<strong>現金付款</strong>。
-
-      </div>
-
-    </div>
+  <div class="dialog-inner">
 
 
     <button
-      class="show-order-again"
-      onclick="scrollToOrderTop()"
+      class="close"
+      id="closeCart"
+      aria-label="關閉"
     >
-      📋 回到訂單最上方
+      ×
     </button>
 
 
-    <div class="confirm-footer">
 
-      藥師的私房紅茶<br>
+    <h2>
+      確認訂單
+    </h2>
 
-      700 臺南市中西區小西門里府前路一段373號<br>
 
-      ☎ 06-2135250<br>
 
-      週三－週日 11:00－22:00
+    <div id="cartItems"></div>
 
-    </div>
 
-  </div>
 
-</div>
+    <div class="total">
 
 
-<script>
+      <span>
+        合計
+      </span>
 
-/* =========================================================
-   菜單
-   ========================================================= */
 
-const menu=[
+      <strong id="cartTotal">
+        $0
+      </strong>
 
-  {
-    cat:"紅茶系列",
-    en:"Black Tea",
-    items:[
-      ["老樹麥香","古早味傳統紅茶",30],
-      ["菁玉紅茶","英式下午茶",45],
-      ["蜜香紅茶","茶葉回甘帶有熟蜜的香氣",45],
-      ["觀音紅茶","帶有微微自然風味的紅茶",45],
-      ["紫霞仙子紅茶","阿薩姆基底，獨特果香，醇厚回甘",50],
-      ["藥師皇茶","獨特的山林木質香氣",55],
-      ["台茶十八號（紅玉）","茶香獨特，口感濃郁強烈",75]
-    ]
-  },
-
-  {
-    cat:"鮮奶茶系列",
-    en:"Milk Tea",
-    items:[
-      ["招牌鮮奶茶","特製奶茶茶湯，類似麥香奶茶",50],
-      ["菁玉鮮奶茶","茶味較明顯的鮮奶茶",50],
-      ["蜜香鮮奶茶","茶葉回甘帶有熟蜜的香氣",50],
-      ["觀音鮮奶茶","讓人耳目一新的特別風味",55],
-      ["阿薩姆鮮奶茶","阿薩姆奶品種獨特的甘醇芳香",55]
-    ]
-  }
-
-];
-
-
-const sweets=[
-  "無糖",
-  "一分糖（10%）",
-  "三分糖（微糖）",
-  "五分糖（半糖）",
-  "八分糖（少糖）",
-  "十分糖（正常糖）"
-];
-
-
-const ices=[
-  "去冰",
-  "三分冰",
-  "八分冰",
-  "正常冰"
-];
-
-
-let cart=[];
-
-let selectedIce="正常冰";
-
-let selectedSweet="十分糖（正常糖）";
-
-
-/* =========================================================
-   飲品圖片
-   ========================================================= */
-
-function drinkImg(name){
-
-  const hue=
-    name.includes("鮮奶")
-      ? "#ead1b2"
-      : "#9d4a2b";
-
-  const svg=`
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="120"
-    height="140">
-
-    <rect
-      width="120"
-      height="140"
-      rx="15"
-      fill="${hue}"
-    />
-
-    <ellipse
-      cx="60"
-      cy="112"
-      rx="38"
-      ry="10"
-      fill="#0002"
-    />
-
-    <path
-      d="M35 28h50l-6 78q-19 12-38 0z"
-      fill="#fff8"
-    />
-
-    <path
-      d="M38 43h44l-4 57q-18 10-36 0z"
-      fill="${
-        name.includes("鮮奶")
-          ? "#c58b58"
-          : "#6f2d1c"
-      }"
-    />
-
-    <path
-      d="M43 20h35v9H43z"
-      fill="#eee"
-    />
-
-    <path
-      d="M79 25l15-18"
-      stroke="#6d4b38"
-      stroke-width="5"
-    />
-
-    <circle
-      cx="50"
-      cy="72"
-      r="3"
-      fill="#fff6"
-    />
-
-  </svg>`;
-
-  return "data:image/svg+xml;charset=utf-8,"
-    + encodeURIComponent(svg);
-}
-
-
-/* =========================================================
-   導覽
-   ========================================================= */
-
-function renderNav(){
-
-  document.getElementById("nav").innerHTML=
-
-    '<button class="active" onclick="filterCat(\'全部\',this)">🥤 全部飲品</button>'
-
-    +
-
-    menu.map(x=>
-      `<button onclick="filterCat('${x.cat}',this)">
-        🍃 ${x.cat}
-      </button>`
-    ).join("")
-
-    +
-
-    '<button onclick="showAbout()">ⓘ 關於我們</button>';
-}
-
-
-/* =========================================================
-   菜單
-   ========================================================= */
-
-function renderMenu(filter="全部",q=""){
-
-  const box=document.getElementById("menu");
-
-  box.innerHTML="";
-
-  menu
-    .filter(
-      s=>filter==="全部" || s.cat===filter
-    )
-    .forEach(s=>{
-
-      const items=s.items.filter(
-        i=>
-          (i[0]+i[1])
-            .toLowerCase()
-            .includes(q.toLowerCase())
-      );
-
-      if(!items.length)return;
-
-      const sec=document.createElement("section");
-
-      sec.className="section";
-
-      sec.innerHTML=`
-
-        <h2>
-          ${s.cat}
-          <small>${s.en}</small>
-        </h2>
-
-        <div class="grid">
-
-          ${items.map(i=>`
-
-            <article class="item">
-
-              <img
-                class="drink"
-                src="${drinkImg(i[0])}"
-              >
-
-              <div>
-
-                <h3>${i[0]}</h3>
-
-                <div class="desc">
-                  ${i[1]}
-                </div>
-
-                <div class="itemBottom">
-
-                  <span class="price">
-                    $${i[2]}
-                  </span>
-
-                  <button
-                    class="add"
-                    onclick='add("${i[0]}",${i[2]},"${i[1]}")'>
-                    ＋
-                  </button>
-
-                </div>
-
-              </div>
-
-            </article>
-
-          `).join("")}
-
-        </div>
-      `;
-
-      box.appendChild(sec);
-
-    });
-}
-
-
-function filterCat(cat,el){
-
-  document
-    .querySelectorAll(".side button")
-    .forEach(
-      x=>x.classList.remove("active")
-    );
-
-  el.classList.add("active");
-
-  renderMenu(
-    cat,
-    document.getElementById("search").value
-  );
-}
-
-
-/* =========================================================
-   冰甜度
-   ========================================================= */
-
-function renderOptions(){
-
-  document.getElementById("iceChips").innerHTML=
-
-    ices.map(x=>
-      `<button
-        class="chip ${x===selectedIce?"selected":""}"
-        onclick="selectGlobal('ice','${x}')">
-        ${x}
-      </button>`
-    ).join("");
-
-
-  document.getElementById("sweetChips").innerHTML=
-
-    sweets.map(x=>
-      `<button
-        class="chip ${x===selectedSweet?"selected":""}"
-        onclick="selectGlobal('sweet','${x}')">
-        ${x}
-      </button>`
-    ).join("");
-}
-
-
-function selectGlobal(type,v){
-
-  if(type==="ice"){
-    selectedIce=v;
-  }else{
-    selectedSweet=v;
-  }
-
-  renderOptions();
-
-  if(cart.length){
-
-    cart.forEach(x=>{
-      x.ice=selectedIce;
-      x.sweet=selectedSweet;
-    });
-
-    renderCart();
-  }
-}
-
-
-/* =========================================================
-   加入購物車
-   ========================================================= */
-
-function add(name,price,desc){
-
-  cart.push({
-    name,
-    price,
-    desc,
-    ice:selectedIce,
-    sweet:selectedSweet,
-    qty:1
-  });
-
-  renderCart();
-
-  toast("已加入購物車");
-}
-
-
-/* =========================================================
-   購物車
-   ========================================================= */
-
-function renderCart(){
-
-  const list=document.getElementById("cartList");
-
-  const count=
-    cart.reduce(
-      (a,x)=>a+x.qty,
-      0
-    );
-
-  const sub=
-    cart.reduce(
-      (a,x)=>a+x.price*x.qty,
-      0
-    );
-
-
-  document.getElementById("topCount")
-    .textContent=count;
-
-  document.getElementById("cartCount")
-    .textContent=`(${count})`;
-
-  document.getElementById("cups")
-    .textContent=count+" 杯";
-
-  document.getElementById("subtotal")
-    .textContent="$"+sub;
-
-  document.getElementById("total")
-    .textContent="$"+sub;
-
-
-  document.getElementById("checkout")
-    .disabled=!cart.length;
-
-  document.getElementById("checkout")
-    .textContent=
-      cart.length
-        ? "前往結帳"
-        : "選擇商品";
-
-
-  if(!cart.length){
-
-    list.innerHTML=
-      '<div class="empty">尚未選擇任何飲品<br>快去選購喜歡的飲品吧！🍵</div>';
-
-    return;
-  }
-
-
-  list.innerHTML=
-
-    cart.map((x,i)=>`
-
-      <div class="cartItem">
-
-        <div
-          style="
-          display:flex;
-          justify-content:space-between;
-          "
-        >
-
-          <span class="cartName">
-            ${x.name}
-          </span>
-
-          <button
-            class="remove"
-            onclick="removeItem(${i})">
-            ✕
-          </button>
-
-        </div>
-
-
-        <div class="opt">
-          ${x.sweet}・${x.ice}
-        </div>
-
-
-        <div class="qrow">
-
-          <button
-            onclick="changeQty(${i},-1)">
-            −
-          </button>
-
-          <span>
-            ${x.qty}
-          </span>
-
-          <button
-            onclick="changeQty(${i},1)">
-            ＋
-          </button>
-
-          <b>
-            $${x.price*x.qty}
-          </b>
-
-        </div>
-
-      </div>
-
-    `).join("");
-}
-
-
-function changeQty(i,d){
-
-  cart[i].qty+=d;
-
-  if(cart[i].qty<=0){
-    cart.splice(i,1);
-  }
-
-  renderCart();
-}
-
-
-function removeItem(i){
-
-  cart.splice(i,1);
-
-  renderCart();
-}
-
-
-/* =========================================================
-   結帳
-   ========================================================= */
-
-function openCheckout(){
-
-  document.getElementById("panel").innerHTML=`
-
-    <h2>確認訂單</h2>
-
-    <p style="color:var(--muted)">
-      取餐方式：
-      <b>到店自取</b>
-      　
-      付款方式：
-      <b>僅收現金</b>
-    </p>
-
-
-    <div
-      style="
-      background:#fff;
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:12px;
-      "
-    >
-
-      ${cart.map(x=>`
-
-        <div
-          style="
-          display:flex;
-          justify-content:space-between;
-          padding:8px 0;
-          border-bottom:1px solid #f2e8df
-          "
-        >
-
-          <span>
-
-            <b>
-              ${x.name}
-            </b>
-
-            × ${x.qty}
-
-            <small
-              style="
-              display:block;
-              color:#888;
-              "
-            >
-              ${x.sweet}・${x.ice}
-            </small>
-
-          </span>
-
-          <b>
-            $${x.price*x.qty}
-          </b>
-
-        </div>
-
-      `).join("")}
 
     </div>
 
 
-    <div
-      class="form"
-      style="margin-top:15px"
-    >
+
+    <form id="orderForm">
+
+
+      <!-- 姓名 -->
 
       <label>
-        取餐人姓名
+
+        姓名
+
+
+        <input
+          name="name"
+          required
+          maxlength="50"
+          placeholder="請輸入姓名"
+        >
+
       </label>
 
-      <input
-        id="customer"
-        placeholder="請輸入姓名"
-      >
 
+
+      <!-- 電話 -->
 
       <label>
-        聯絡電話
+
+        電話
+
+
+        <input
+          name="phone"
+          required
+          maxlength="30"
+          inputmode="tel"
+          placeholder="請輸入手機或電話"
+        >
+
       </label>
 
-      <input
-        id="phone"
-        type="tel"
-        inputmode="tel"
-        placeholder="請輸入手機或電話"
-      >
 
+
+      <!-- 取餐時間 -->
 
       <label>
+
         取餐時間
+
+
+        <input
+          name="pickupDateTime"
+          required
+          maxlength="50"
+          placeholder="例如：11/13 17:20"
+        >
+
       </label>
 
-      <input
-        id="pickupDateTime"
-        type="text"
-        inputmode="text"
-        placeholder="例如：8/25 17:30"
-        aria-label="取餐日期與時間"
-      >
 
+
+      <!-- 取餐時間說明 -->
 
       <div
         style="
-        margin-top:8px;
-        padding:11px 12px;
-        background:#fff8ef;
-        border:1px solid #ead8c6;
-        border-radius:10px;
-        color:#7a675b;
-        font-size:14px;
-        line-height:1.6
+          margin:-4px 0 12px;
+          padding:10px 12px;
+          background:#fff8ef;
+          border:1px solid #ead8c6;
+          border-radius:10px;
+          color:#7a675b;
+          font-size:14px;
+          line-height:1.6;
         "
       >
-        如訂購杯數較多，需較長製作時間，
-        請提早訂購或來電詢問，謝謝。
+
+        溫馨提醒：如訂購杯數較多，製作時間較長，
+        請提前訂購或來電詢問，謝謝。
+
       </div>
 
 
-      <label>
-        訂單備注
-      </label>
 
-      <textarea
-        id="remark"
-        rows="3"
-        placeholder="例如：到店後請告知取餐、其他需求…"
-      ></textarea>
-
+      <!-- 購物袋 -->
 
       <label>
-        統一編號（選填）
+        購物袋
       </label>
 
-      <input
-        id="taxId"
-        placeholder="如需統編請填寫"
-      >
-
-    </div>
 
 
-    <div class="actions">
+      <div class="bag-option">
 
-      <button onclick="closeModal()">
-        返回修改
-      </button>
+
+        <span>
+
+          1 杯袋
+
+          <small>
+            $1／個
+          </small>
+
+        </span>
+
+
+        <button
+          type="button"
+          onclick="changeBag('bag1',-1)"
+        >
+          −
+        </button>
+
+
+        <span id="bag1Count">
+          0
+        </span>
+
+
+        <button
+          type="button"
+          onclick="changeBag('bag1',1)"
+        >
+          ＋
+        </button>
+
+
+      </div>
+
+
+
+      <div class="bag-option">
+
+
+        <span>
+
+          2～8 杯袋
+
+          <small>
+            $2／個
+          </small>
+
+        </span>
+
+
+        <button
+          type="button"
+          onclick="changeBag('bag2',-1)"
+        >
+          −
+        </button>
+
+
+        <span id="bag2Count">
+          0
+        </span>
+
+
+        <button
+          type="button"
+          onclick="changeBag('bag2',1)"
+        >
+          ＋
+        </button>
+
+
+      </div>
+
+
+
+      <!-- 備註 -->
+
+      <label>
+
+        備註
+
+
+        <textarea
+          name="note"
+          maxlength="300"
+          placeholder="例如：統編、其他需求"
+        ></textarea>
+
+
+      </label>
+
+
+
+      <!-- 送出 -->
 
       <button
-        class="primary"
-        onclick="placeOrder()"
+        class="submit"
+        type="submit"
       >
         送出訂單
       </button>
 
-    </div>
 
-  `;
+    </form>
 
-  document
-    .getElementById("modal")
-    .classList.add("open");
-}
 
 
-/* =========================================================
-   送出訂單
-   ========================================================= */
+    <p class="cash-note">
+      送出後請依訂單編號到店取餐，現場付款。
+    </p>
 
-async function placeOrder(){
 
-  const name=
-    document
-      .getElementById("customer")
-      .value
-      .trim();
 
-  const phone=
-    document
-      .getElementById("phone")
-      .value
-      .trim();
+    <!--
+      ==========================================================
+      訂單結果
+      ==========================================================
+      這裡保留原本的 result。
+      app.js 原本的訂單結果會繼續顯示在這裡。
+    -->
 
-  const pickupDateTime=
-    document
-      .getElementById("pickupDateTime")
-      .value
-      .trim();
+    <div id="result"></div>
 
-  const note=
-    document
-      .getElementById("remark")
-      .value
-      .trim();
 
-  const taxId=
-    document
-      .getElementById("taxId")
-      .value
-      .trim();
 
+    <!--
+      ==========================================================
+      新增：訂單截圖／保存提醒
+      ==========================================================
+      不修改原本訂單結果，
+      只在訂單送出後顯示這個提醒。
+    -->
 
-  if(!name || !phone){
+    <div
+      id="orderSaveReminder"
+      style="
+        display:none;
+        margin-top:20px;
+        padding:20px 18px;
+        background:#fff7e8;
+        border:3px solid #963028;
+        border-radius:18px;
+        color:#4b3029;
+        box-shadow:0 6px 18px rgba(0,0,0,.10);
+        text-align:left;
+      "
+    >
 
-    toast(
-      "請填寫取餐人姓名與電話"
-    );
-
-    return;
-  }
-
-
-  if(!pickupDateTime){
-
-    toast(
-      "請填寫取餐時間"
-    );
-
-    return;
-  }
-
-
-  if(!cart.length){
-
-    toast(
-      "請至少選擇一杯茶"
-    );
-
-    return;
-  }
-
-
-  /*
-   * 重要：
-   * 在送出前先複製一份訂單資料。
-   * 因為送出成功後 cart 會清空。
-   */
-
-  const confirmItems=
-    cart.map(x=>({
-      name:x.name,
-      price:x.price,
-      quantity:x.qty,
-      sweetness:x.sweet,
-      ice:x.ice
-    }));
-
-
-  const confirmSubtotal=
-    cart.reduce(
-      (sum,x)=>
-        sum + x.price*x.qty,
-      0
-    );
-
-
-  const payload={
-
-    customer:{
-      name,
-      phone,
-      pickupDateTime,
-      note,
-      taxId
-    },
-
-    items:
-      cart.map(x=>({
-
-        name:x.name,
-        price:x.price,
-        quantity:x.qty
-
-      }))
-
-  };
-
-
-  try{
-
-    const response=
-      await fetch(
-        "/api/orders",
-        {
-          method:"POST",
-
-          headers:{
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify(payload)
-        }
-      );
-
-
-    const data=
-      await response.json();
-
-
-    if(
-      !response.ok ||
-      !data.ok
-    ){
-
-      throw new Error(
-        data.message ||
-        "訂單送出失敗"
-      );
-
-    }
-
-
-    /*
-     * 保存訂單編號
-     */
-
-    const customerOrderNumber=
-      data.orderId ||
-      data.orderNumber ||
-      "";
-
-
-    localStorage.setItem(
-      "teaHouseOrderId",
-      customerOrderNumber
-    );
-
-
-    /*
-     * 先關閉原本結帳視窗
-     */
-
-    cart=[];
-
-    closeModal();
-
-    renderCart();
-
-
-    /*
-     * 顯示新的完整訂單確認頁
-     */
-
-    showOrderConfirmation({
-
-      orderNumber:
-        customerOrderNumber,
-
-      pickupTime:
-        pickupDateTime,
-
-      items:
-        confirmItems,
-
-      bag1Count:
-        data.bag1Count || 0,
-
-      bag2Count:
-        data.bag2Count || 0,
-
-      note:
-        note,
-
-      total:
-        data.total !== undefined
-          ? data.total
-          : confirmSubtotal
-
-    });
-
-
-    /*
-     * 保留原本訂單狀態功能
-     */
-
-    showOrderStatus({
-
-      id:
-        customerOrderNumber,
-
-      status:
-        "new",
-
-      estimatedPickupTime:
-        data.estimatedPickupTime
-
-    });
-
-
-    /*
-     * 保留客人即時訂單通知
-     */
-
-    connectCustomerOrder(
-      customerOrderNumber
-    );
-
-
-  }catch(error){
-
-    console.error(error);
-
-    toast(
-      error.message ||
-      "訂單送出失敗，請稍後再試"
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   新的完整訂單確認頁
-   ========================================================= */
-
-function showOrderConfirmation(order){
-
-  const page=
-    document.getElementById(
-      "orderConfirmPage"
-    );
-
-
-  /*
-   * 訂單編號
-   */
-
-  document.getElementById(
-    "confirmOrderNumber"
-  ).textContent=
-    order.orderNumber ||
-    "訂單編號";
-
-
-  /*
-   * 取餐時間
-   */
-
-  document.getElementById(
-    "confirmPickupTime"
-  ).textContent=
-    order.pickupTime ||
-    "請依店家確認時間取餐";
-
-
-  /*
-   * 商品內容
-   */
-
-  const itemsBox=
-    document.getElementById(
-      "confirmItems"
-    );
-
-
-  if(
-    !order.items ||
-    !order.items.length
-  ){
-
-    itemsBox.innerHTML=
-      `<div
+      <div
         style="
-        padding:20px 0;
-        text-align:center;
-        color:#888;
+          font-size:22px;
+          font-weight:800;
+          margin-bottom:12px;
+          color:#963028;
         "
       >
-        訂單內容載入中...
-      </div>`;
-
-  }else{
-
-    itemsBox.innerHTML=
-
-      order.items.map(item=>`
-
-        <div class="confirm-item">
-
-          <div class="confirm-item-main">
-
-            <span class="confirm-item-name">
-              ${escapeHtml(item.name)}
-              × ${item.quantity}
-            </span>
-
-            <span class="confirm-item-price">
-              $${Number(item.price || 0) * Number(item.quantity || 0)}
-            </span>
-
-          </div>
-
-          <div class="confirm-item-option">
-
-            ${item.sweetness
-              ? "甜度：" +
-                escapeHtml(item.sweetness)
-              : ""}
-
-            ${item.sweetness && item.ice
-              ? "　｜　"
-              : ""}
-
-            ${item.ice
-              ? "冰塊：" +
-                escapeHtml(item.ice)
-              : ""}
-
-          </div>
-
-        </div>
-
-      `).join("");
-
-  }
-
-
-  /*
-   * 購物袋
-   */
-
-  const bag1=
-    Number(order.bag1Count || 0);
-
-  const bag2=
-    Number(order.bag2Count || 0);
-
-
-  const bagCard=
-    document.getElementById(
-      "confirmBagCard"
-    );
-
-  const bagBox=
-    document.getElementById(
-      "confirmBag"
-    );
-
-
-  if(bag1 > 0 || bag2 > 0){
-
-    bagCard.style.display="block";
-
-    let bagHtml="";
-
-    if(bag1 > 0){
-
-      bagHtml+=
-        `1 杯袋 × ${bag1}`;
-
-    }
-
-    if(bag2 > 0){
-
-      if(bagHtml){
-        bagHtml+="<br>";
-      }
-
-      bagHtml+=
-        `2～8 杯袋 × ${bag2}`;
-
-    }
-
-    bagBox.innerHTML=
-      bagHtml;
-
-  }else{
-
-    bagCard.style.display="none";
-
-  }
-
-
-  /*
-   * 備註
-   */
-
-  const noteCard=
-    document.getElementById(
-      "confirmNoteCard"
-    );
-
-  const noteBox=
-    document.getElementById(
-      "confirmNote"
-    );
-
-
-  if(order.note){
-
-    noteCard.style.display="block";
-
-    noteBox.textContent=
-      order.note;
-
-  }else{
-
-    noteCard.style.display="none";
-
-  }
-
-
-  /*
-   * 總金額
-   */
-
-  document.getElementById(
-    "confirmTotal"
-  ).textContent=
-    "$" +
-    Number(order.total || 0);
-
-
-  /*
-   * 顯示整個確認頁
-   */
-
-  page.classList.add("show");
-
-
-  /*
-   * 回到最上方
-   */
-
-  page.scrollTop=0;
-
-
-  /*
-   * 不讓背景頁面繼續滾動
-   */
-
-  document.body.style.overflow="hidden";
-
-}
-
-
-/* =========================================================
-   回到訂單最上方
-   ========================================================= */
-
-function scrollToOrderTop(){
-
-  const page=
-    document.getElementById(
-      "orderConfirmPage"
-    );
-
-  page.scrollTo({
-    top:0,
-    behavior:"smooth"
-  });
-
-}
-
-
-/* =========================================================
-   原本訂單狀態
-   ========================================================= */
-
-function showOrderStatus(order){
-
-  const box=
-    document.getElementById(
-      "orderStatus"
-    );
-
-  const text=
-    document.getElementById(
-      "orderStatusText"
-    );
-
-
-  /*
-   * 注意：
-   * 完整確認頁已經顯示主要資訊。
-   * 所以這個舊的小狀態框不再擋住客人畫面。
-   */
-
-  box.style.display="none";
-
-
-  if(
-    order.status==="confirmed" &&
-    order.pickupTime
-  ){
-
-    text.innerHTML=
-      "🟢 店家已確認取餐時間<br>" +
-
-      "<strong style='font-size:24px;color:#217a2d'>" +
-
-      escapeHtml(
-        order.pickupTime
-      ) +
-
-      "</strong><br>" +
-
-      "請依確認時間到店取餐，謝謝！";
-
-    return;
-
-  }
-
-
-  if(order.estimatedPickupTime){
-
-    const t=
-      new Date(
-        order.estimatedPickupTime
-      );
-
-    const time=
-      t.toLocaleTimeString(
-        "zh-TW",
-        {
-          hour:"2-digit",
-          minute:"2-digit",
-          hour12:false
-        }
-      );
-
-
-    text.innerHTML=
-      "⏳ 訂單已送出，等待店家確認<br>" +
-
-      "系統預估約 <strong>" +
-
-      time +
-
-      "</strong> 可取餐";
-
-  }else{
-
-    text.textContent=
-      "⏳ 訂單已送出，等待店家確認取餐時間";
-
-  }
-
-}
-
-
-/* =========================================================
-   客人即時訂單
-   ========================================================= */
-
-let customerOrderStream=null;
-
-
-function connectCustomerOrder(orderId){
-
-  if(customerOrderStream){
-
-    customerOrderStream.close();
-
-  }
-
-
-  customerOrderStream=
-    new EventSource(
-      "/api/orders/" +
-      encodeURIComponent(orderId) +
-      "/stream"
-    );
-
-
-  customerOrderStream.onmessage=
-    event=>{
-
-      try{
-
-        const data=
-          JSON.parse(
-            event.data
-          );
-
-
-        if(
-          data.type==="order-updated" &&
-          data.order
-        ){
-
-          /*
-           * 店家更新訂單後，
-           * 仍然保留完整確認頁。
-           */
-
-          showOrderStatus(
-            data.order
-          );
-
-
-          /*
-           * 如果店家確認取餐時間，
-           * 更新確認頁上的取餐時間。
-           */
-
-          if(
-            data.order.status==="confirmed" &&
-            data.order.pickupTime
-          ){
-
-            const pickup=
-              document.getElementById(
-                "confirmPickupTime"
-              );
-
-            if(pickup){
-
-              pickup.textContent=
-                data.order.pickupTime;
-
-            }
-
-
-            /*
-             * 提醒客人
-             */
-
-            toast(
-              "🔔 店家已確認取餐時間：" +
-              data.order.pickupTime
-            );
-
-          }
-
-        }
-
-      }catch(error){
-
-        console.error(
-          "客人訂單通知錯誤",
-          error
-        );
-
-      }
-
-    };
-
-
-  customerOrderStream.onerror=()=>{
-
-    /*
-     * EventSource
-     * 會自動重新連線
-     */
-
-  };
-
-}
-
-
-/* =========================================================
-   恢復客人訂單
-   ========================================================= */
-
-function restoreCustomerOrder(){
-
-  const orderId=
-    localStorage.getItem(
-      "teaHouseOrderId"
-    );
-
-
-  if(orderId){
-
-    connectCustomerOrder(
-      orderId
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   關於我們
-   ========================================================= */
-
-function showAbout(){
-
-  document.getElementById("panel").innerHTML=`
-
-    <h2>
-      關於藥師的私房紅茶
-    </h2>
-
-    <p>
-      週三－週日 11:00－22:00
-    </p>
-
-    <p>
-      📍 700 臺南市中西區小西門里府前路一段373號
-    </p>
-
-    <p>
-      ☎ 06-2135250
-    </p>
-
-    <p>
-      本店採現點現做，
-      線上訂餐僅提供到店自取，
-      付款方式為現金。
-    </p>
-
-    <div class="actions">
-
-      <button
-        class="primary"
-        onclick="closeModal()"
+        📸 請立即截圖或保存此訂單畫面！
+      </div>
+
+
+      <div
+        style="
+          font-size:17px;
+          line-height:1.8;
+          font-weight:600;
+        "
       >
-        關閉
-      </button>
+
+        到店取餐時，請向店員出示您的
+        <strong style="color:#963028;">
+          訂單編號
+        </strong>。
+
+
+        <br>
+
+
+        並依訂單編號到店取餐，
+        <strong>
+          現場付款。
+        </strong>
+
+      </div>
+
+
+      <div
+        style="
+          margin-top:14px;
+          padding-top:14px;
+          border-top:1px solid #dfc9ad;
+          font-size:14px;
+          line-height:1.6;
+          color:#765f55;
+        "
+      >
+
+        ⚠️ 為避免忘記訂單編號，
+        建議現在就將此畫面截圖或保存。
+
+      </div>
 
     </div>
 
-  `;
 
-  document
-    .getElementById("modal")
-    .classList.add("open");
-
-}
+  </div>
 
 
-/* =========================================================
-   關閉視窗
-   ========================================================= */
-
-function closeModal(){
-
-  document
-    .getElementById("modal")
-    .classList.remove("open");
-
-}
+</dialog>
 
 
-/* =========================================================
-   Toast
-   ========================================================= */
 
-function toast(t){
-
-  const e=
-    document.getElementById(
-      "toast"
-    );
-
-  e.textContent=t;
-
-  e.classList.add("show");
-
-  setTimeout(
-    ()=>{
-      e.classList.remove("show");
-    },
-    1900
-  );
-
-}
+<div
+  id="toast"
+  class="toast"
+></div>
 
 
-/* =========================================================
-   HTML Escape
-   ========================================================= */
 
-function escapeHtml(value){
-
-  return String(
-    value ?? ""
-  ).replace(
-    /[&<>"']/g,
-    char=>
-      ({
-        "&":"&amp;",
-        "<":"&lt;",
-        ">":"&gt;",
-        "\"":"&quot;",
-        "'":"&#39;"
-      }[char])
-  );
-
-}
+<script src="/app.js"></script>
 
 
-/* =========================================================
-   搜尋
-   ========================================================= */
 
-document
-  .getElementById("search")
-  .addEventListener(
-    "input",
-    e=>
-      renderMenu(
-        "全部",
-        e.target.value
-      )
-  );
+<!--
+  ============================================================
+  新增功能：
+  監看原本的 #result
+
+  app.js 送出訂單後，只要 #result 裡面出現訂單結果，
+  就會自動顯示「請截圖或保存」提醒。
+
+  不會修改原本的訂單內容。
+  不會修改商品。
+  不會修改購物車。
+  不會修改送單流程。
+  ============================================================
+-->
+
+<script>
+
+(function () {
+
+  const result = document.getElementById("result");
+
+  const reminder = document.getElementById("orderSaveReminder");
 
 
-/* =========================================================
-   點擊 Modal 外部關閉
-   ========================================================= */
+  if (!result || !reminder) {
+    return;
+  }
 
-document
-  .getElementById("modal")
-  .addEventListener(
-    "click",
-    e=>{
-      if(
-        e.target.id==="modal"
-      ){
-        closeModal();
-      }
+
+  function checkOrderResult() {
+
+    const text = (result.innerText || "").trim();
+
+    const html = (result.innerHTML || "").trim();
+
+
+    /*
+      只要原本的 result 有訂單內容，
+      就顯示提醒。
+
+      使用多個關鍵字判斷，
+      避免頁面一開始就顯示。
+    */
+
+    const hasOrder =
+      text.length > 0 &&
+      (
+        text.includes("訂單") ||
+        text.includes("取餐") ||
+        text.includes("合計") ||
+        html.length > 20
+      );
+
+
+    if (hasOrder) {
+
+      reminder.style.display = "block";
+
+    } else {
+
+      reminder.style.display = "none";
+
+    }
+
+  }
+
+
+  /*
+    監看 app.js 是否更新 #result
+  */
+
+  const observer = new MutationObserver(function () {
+
+    checkOrderResult();
+
+  });
+
+
+  observer.observe(
+    result,
+    {
+      childList: true,
+      subtree: true,
+      characterData: true
     }
   );
 
 
-/* =========================================================
-   初始化
-   ========================================================= */
+  /*
+    初始檢查
+  */
 
-renderNav();
+  checkOrderResult();
 
-renderMenu();
 
-renderOptions();
-
-renderCart();
-
-restoreCustomerOrder();
+})();
 
 </script>
+
 
 </body>
 </html>
