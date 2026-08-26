@@ -141,6 +141,55 @@ function num(v){
   return Number.isFinite(n)?n:0;
 }
 
+// 客人、後台與 Telegram 全部使用同一組訂單編號。
+// Supabase 仍保留數字 order_number 作為內部資料庫索引，不需要修改資料表。
+function makeOrderId(orderNumber){
+  const n=Math.floor(num(orderNumber));
+
+  if(!n){
+    return '';
+  }
+
+  const prefix=n
+    .toString(36)
+    .toUpperCase();
+
+  const suffix=crypto
+    .createHash('sha256')
+    .update(String(n))
+    .digest('hex')
+    .slice(0,6)
+    .toUpperCase();
+
+  return `T${prefix}${suffix}`;
+}
+
+// 同時接受資料庫內部數字編號與對外顯示的訂單編號。
+function resolveOrderNumber(value){
+  const raw=String(value??'')
+    .trim()
+    .toUpperCase();
+
+  if(/^\d+$/.test(raw)){
+    return Math.floor(num(raw));
+  }
+
+  if(!/^T[A-Z0-9]+$/.test(raw)||raw.length<8){
+    return 0;
+  }
+
+  const encoded=raw.slice(1,-6);
+  const n=parseInt(encoded,36);
+
+  if(!Number.isFinite(n)||n<=0){
+    return 0;
+  }
+
+  return makeOrderId(n)===raw
+    ? n
+    : 0;
+}
+
 async function telegram(method,data){
   const token=
     String(
@@ -287,7 +336,7 @@ async function notify(order){
 
 function normalize(row){
   return{
-    id:`T${num(row.order_number)}`,
+    id:makeOrderId(row.order_number),
     orderNumber:num(row.order_number),
     createdAt:row.created_at,
     status:row.order_status||'new',
@@ -321,10 +370,16 @@ async function getOrders(){
 }
 
 async function getOrder(n){
+  const orderNumber=resolveOrderNumber(n);
+
+  if(!orderNumber){
+    return null;
+  }
+
   const x=
     await supabase(
       `orders?select=*&order_number=eq.${encodeURIComponent(
-        num(n)
+        orderNumber
       )}&limit=1`
     );
 
@@ -332,9 +387,15 @@ async function getOrder(n){
 }
 
 async function deleteOrder(n){
+  const orderNumber=resolveOrderNumber(n);
+
+  if(!orderNumber){
+    throw Error('訂單編號格式錯誤');
+  }
+
   return supabase(
     `orders?order_number=eq.${encodeURIComponent(
-      num(n)
+      orderNumber
     )}`,
     {
       method:'DELETE',
@@ -344,6 +405,12 @@ async function deleteOrder(n){
 }
 
 async function statusOrder(n,status){
+  const orderNumber=resolveOrderNumber(n);
+
+  if(!orderNumber){
+    throw Error('訂單編號格式錯誤');
+  }
+
   const allowed=[
     'new',
     'confirmed',
@@ -362,7 +429,7 @@ async function statusOrder(n,status){
   const x=
     await supabase(
       `orders?order_number=eq.${encodeURIComponent(
-        num(n)
+        orderNumber
       )}`,
       {
         method:'PATCH',
@@ -376,6 +443,7 @@ async function statusOrder(n,status){
 }
 
 function deleteLocal(n){
+  const orderNumber=resolveOrderNumber(n);
   const a=readOrders();
 
   const b=
@@ -384,7 +452,7 @@ function deleteLocal(n){
         num(
           x.orderNumber??
           x.order_number
-        )!==num(n)
+        )!==orderNumber
     );
 
   writeOrders(b);
@@ -475,6 +543,9 @@ function adminHtml(rows,key){
 
       const n=
         r.order_number??'';
+
+      const displayId=
+        makeOrderId(n)||String(n);
 
       const created=
         r.created_at
@@ -580,10 +651,10 @@ function adminHtml(rows,key){
       }
 
       return `
-<tr data-row="${esc(n)}">
+<tr data-row="${esc(displayId)}">
 
 <td>
-<strong>${esc(n)}</strong>
+<strong>${esc(displayId)}</strong>
 </td>
 
 <td>
@@ -617,7 +688,7 @@ ${esc(status)}
 <button
 class="delete-btn"
 type="button"
-data-order-number="${esc(n)}"
+data-order-number="${esc(displayId)}"
 >
 🗑️ 刪除
 </button>
@@ -983,7 +1054,7 @@ e
 
 alert(
 e.message||
-'刪除訂單失敗，請稍後再試。'
+'刪除訂單失敗'
 );
 
 button.disabled=false;
@@ -1005,7 +1076,9 @@ e.target.closest(
 );
 
 if(b){
+
 del(b);
+
 }
 
 }
@@ -1019,23 +1092,33 @@ del(b);
 
 </html>
 `;
-
 }
+
+const MIME={
+'.html':'text/html; charset=utf-8',
+'.js':'application/javascript; charset=utf-8',
+'.css':'text/css; charset=utf-8',
+'.json':'application/json; charset=utf-8',
+'.png':'image/png',
+'.jpg':'image/jpeg',
+'.jpeg':'image/jpeg',
+'.gif':'image/gif',
+'.svg':'image/svg+xml',
+'.ico':'image/x-icon',
+'.webp':'image/webp'
+};
 
 const server=
 http.createServer(
 async(req,res)=>{
 
-try{
-
 const u=
 new URL(
 req.url,
-`http://${
-req.headers.host||
-'localhost'
-}`
+`http://${req.headers.host||'localhost'}`
 );
+
+try{
 
 if(
 req.method===
@@ -1199,16 +1282,7 @@ const orderNumber=
 Date.now();
 
 const id=
-`T${
-orderNumber
-.toString(36)
-.toUpperCase()
-}${
-crypto
-.randomBytes(2)
-.toString('hex')
-.toUpperCase()
-}`;
+makeOrderId(orderNumber);
 
 const order={
 
@@ -1461,9 +1535,7 @@ u.pathname
 .pop();
 
 if(
-!Number.isFinite(
-Number(n)
-)
+!resolveOrderNumber(n)
 ){
 
 return send(
@@ -1506,8 +1578,11 @@ res,
 {
 ok:true,
 
+orderId:
+makeOrderId(resolveOrderNumber(n)),
+
 orderNumber:
-num(n),
+resolveOrderNumber(n),
 
 deletedFromSupabase:
 Array.isArray(deleted)
@@ -1592,55 +1667,46 @@ normalize(row)
 
 if(
 req.method==='GET'&&
-u.pathname===
-'/admin'
+u.pathname==='/admin'
 ){
 
-if(
-u.searchParams.get('key')!==
-adminKey()
-){
+const key=
+u.searchParams.get('key')||
+'';
+
+if(key!==adminKey()){
 
 return send(
 res,
 401,
-'Unauthorized',
-'text/plain; charset=utf-8'
+'<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><title>Unauthorized</title><h1>Unauthorized</h1>',
+'text/html; charset=utf-8'
 );
 
 }
 
 let rows=[];
 
-if(
-hasSupabase()
-){
-
 try{
+
+if(hasSupabase()){
 
 rows=
 await getOrders();
 
+}else{
+
+rows=
+localAsRows();
+
+}
+
 }catch(e){
 
 console.error(
-'Supabase 讀取失敗',
+'讀取訂單錯誤',
 e
 );
-
-return send(
-res,
-503,
-{
-ok:false,
-message:
-'Supabase 讀取失敗，為避免顯示舊備份訂單，後台暫時無法顯示訂單。請稍後重新整理。'
-}
-);
-
-}
-
-}else{
 
 rows=
 localAsRows();
@@ -1650,18 +1716,11 @@ localAsRows();
 return send(
 res,
 200,
-adminHtml(
-rows,
-u.searchParams.get('key')||''
-),
+adminHtml(rows,key),
 'text/html; charset=utf-8'
 );
 
 }
-
-if(
-req.method==='GET'
-){
 
 const file=
 safeFile(
@@ -1673,19 +1732,22 @@ if(!file){
 return send(
 res,
 403,
-'Forbidden',
-'text/plain; charset=utf-8'
+{
+ok:false,
+message:
+'Forbidden'
+}
 );
 
 }
 
 fs.stat(
 file,
-(e,s)=>{
+(err,st)=>{
 
 if(
-e||
-!s.isFile()
+err||
+!st.isFile()
 ){
 
 return send(
@@ -1702,74 +1764,32 @@ path.extname(
 file
 ).toLowerCase();
 
-const types={
-
-'.html':
-'text/html; charset=utf-8',
-
-'.css':
-'text/css; charset=utf-8',
-
-'.js':
-'text/javascript; charset=utf-8',
-
-'.json':
-'application/json; charset=utf-8',
-
-'.svg':
-'image/svg+xml',
-
-'.jpg':
-'image/jpeg',
-
-'.jpeg':
-'image/jpeg',
-
-'.png':
-'image/png',
-
-'.webp':
-'image/webp',
-
-'.ico':
-'image/x-icon'
-
-};
-
 res.writeHead(
 200,
 {
 'Content-Type':
-types[ext]||
+MIME[ext]||
 'application/octet-stream',
 
 'Cache-Control':
-'no-cache'
+ext==='.html'
+?'no-store'
+:'public,max-age=3600'
 }
 );
 
 fs.createReadStream(
 file
-).pipe(res);
+)
+.pipe(res);
 
 }
-);
-
-return;
-
-}
-
-return send(
-res,
-404,
-'Not Found',
-'text/plain; charset=utf-8'
 );
 
 }catch(e){
 
 console.error(
-'SERVER ERROR',
+'伺服器錯誤',
 e
 );
 
@@ -1780,7 +1800,7 @@ res,
 ok:false,
 message:
 e.message||
-'伺服器錯誤'
+'伺服器發生錯誤'
 }
 );
 
@@ -1792,25 +1812,8 @@ e.message||
 server.listen(
 PORT,
 ()=>{
-
 console.log(
-`Tea House ordering system running on port ${PORT}`
+`Server running on port ${PORT}`
 );
-
-console.log(
-`Supabase enabled: ${
-hasSupabase()
-}`
-);
-
-console.log(
-`Telegram enabled: ${
-Boolean(
-process.env.TELEGRAM_BOT_TOKEN&&
-process.env.TELEGRAM_CHAT_ID
-)
-}`
-);
-
 }
 );
