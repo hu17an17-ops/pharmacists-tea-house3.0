@@ -160,7 +160,7 @@ function send(
       "Cache-Control": "no-store",
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods":
-        "GET,POST,PUT,OPTIONS",
+        "GET,POST,PUT,DELETE,OPTIONS",
       "Access-Control-Allow-Headers":
         "Content-Type"
     }
@@ -705,6 +705,53 @@ async function getSupabaseOrderByNumber(
 
 
 /* =========================================================
+   刪除 Supabase 訂單
+   ========================================================= */
+
+async function deleteSupabaseOrder(orderNumber) {
+  const number = Number(orderNumber);
+
+  if (!Number.isFinite(number)) {
+    throw new Error("訂單編號格式錯誤");
+  }
+
+  const result = await supabaseRequest(
+    `orders?order_number=eq.${encodeURIComponent(number)}`,
+    {
+      method: "DELETE",
+      prefer: "return=representation"
+    }
+  );
+
+  return Array.isArray(result) ? result : [];
+}
+
+
+/* =========================================================
+   刪除本機 orders.json 備份
+   ========================================================= */
+
+function deleteLocalOrder(orderNumber) {
+  const number = Number(orderNumber);
+  const orders = readOrders();
+
+  const remaining = orders.filter(order =>
+    Number(
+      order.orderNumber ??
+      order.order_number
+    ) !== number
+  );
+
+  const deletedCount =
+    orders.length - remaining.length;
+
+  writeOrders(remaining);
+
+  return deletedCount;
+}
+
+
+/* =========================================================
    更新 Supabase 訂單狀態
    ========================================================= */
 
@@ -904,7 +951,7 @@ const server =
               "*",
 
             "Access-Control-Allow-Methods":
-              "GET,POST,PUT,OPTIONS",
+              "GET,POST,PUT,DELETE,OPTIONS",
 
             "Access-Control-Allow-Headers":
               "Content-Type"
@@ -1430,6 +1477,132 @@ const server =
 
 
       /* =====================================================
+         刪除訂單
+
+         DELETE /api/admin/orders/:orderNumber?key=你的ADMIN_KEY
+         ===================================================== */
+
+      if (
+        req.method === "DELETE" &&
+        url.pathname.match(
+          /^\/api\/admin\/orders\/[^/]+$/
+        )
+      ) {
+
+        const adminKey =
+          process.env.ADMIN_KEY ||
+          "change-me";
+
+        if (
+          url.searchParams.get(
+            "key"
+          ) !== adminKey
+        ) {
+
+          return send(
+            res,
+            401,
+            {
+              ok: false,
+              message:
+                "Unauthorized"
+            }
+          );
+        }
+
+        try {
+
+          const parts =
+            url.pathname
+              .split("/");
+
+          const orderNumber =
+            parts[4];
+
+          if (
+            !Number.isFinite(
+              Number(orderNumber)
+            )
+          ) {
+
+            return send(
+              res,
+              400,
+              {
+                ok: false,
+                message:
+                  "訂單編號格式錯誤"
+              }
+            );
+          }
+
+          if (
+            !hasSupabaseConfig()
+          ) {
+
+            return send(
+              res,
+              503,
+              {
+                ok: false,
+                message:
+                  "Supabase 尚未設定"
+              }
+            );
+          }
+
+          const deleted =
+            await deleteSupabaseOrder(
+              orderNumber
+            );
+
+          const localDeleted =
+            deleteLocalOrder(
+              orderNumber
+            );
+
+          return send(
+            res,
+            200,
+            {
+              ok: true,
+
+              orderNumber:
+                Number(orderNumber),
+
+              deletedFromSupabase:
+                deleted.length,
+
+              deletedFromLocalBackup:
+                localDeleted
+            }
+          );
+
+        } catch (
+          error
+        ) {
+
+          console.error(
+            "❌ 刪除訂單錯誤：",
+            error
+          );
+
+          return send(
+            res,
+            500,
+            {
+              ok: false,
+
+              message:
+                error.message ||
+                "刪除訂單失敗"
+            }
+          );
+        }
+      }
+
+
+      /* =====================================================
          更新訂單狀態
 
          PUT /api/orders/:orderNumber/status
@@ -1595,11 +1768,37 @@ const server =
 
 
         /* =================================================
-           Supabase 失敗時使用本機備份
+           Supabase 是正式訂單唯一資料來源
+
+           Supabase 已設定時：
+           - 查詢成功 0 筆 = 目前沒有訂單
+           - 查詢失敗 = 不顯示 orders.json 舊備份
+
+           避免 Supabase 刪除後，舊備份又把訂單復活。
            ================================================= */
 
         if (
+          hasSupabaseConfig() &&
           !supabaseReadSucceeded
+        ) {
+
+          return send(
+            res,
+            503,
+            {
+              ok: false,
+
+              message:
+                "Supabase 讀取失敗，為避免顯示舊備份訂單，後台暫時無法顯示訂單。請稍後重新整理。"
+            }
+          );
+        }
+
+
+        /* 沒有設定 Supabase 時，才使用本機備份 */
+
+        if (
+          !hasSupabaseConfig()
         ) {
 
           try {
@@ -1607,77 +1806,74 @@ const server =
             const localOrders =
               readOrders();
 
-            if (
-              localOrders.length >
-              0
-            ) {
+            orders =
+              localOrders.map(
+                order => ({
 
-              orders =
-                localOrders.map(
-                  order => ({
-                    order_number:
-                      order.orderNumber ||
-                      null,
+                  order_number:
+                    order.orderNumber ||
+                    null,
 
-                    customer_name:
-                      order.customer?.name ||
-                      "",
+                  customer_name:
+                    order.customer?.name ||
+                    "",
 
-                    customer_phone:
-                      order.customer?.phone ||
-                      "",
+                  customer_phone:
+                    order.customer?.phone ||
+                    "",
 
-                    items:
-                      order.items ||
-                      [],
+                  items:
+                    order.items ||
+                    [],
 
-                    total_amount:
-                      order.total ||
+                  total_amount:
+                    order.total ||
+                    0,
+
+                  invoice_number:
+                    order.customer?.invoiceNumber ||
+                    null,
+
+                  shopping_bag:
+                    Boolean(
+                      order.bag1Count ||
+                      order.bag2Count
+                    ),
+
+                  bag1_count:
+                    Math.max(
                       0,
-
-                    invoice_number:
-                      order.customer?.invoiceNumber ||
-                      null,
-
-                    shopping_bag:
-                      Boolean(
+                      Number(
                         order.bag1Count ||
-                        order.bag2Count
-                      ),
+                        0
+                      )
+                    ),
 
-                    bag1_count:
-                      Math.max(
-                        0,
-                        Number(
-                          order.bag1Count || 0
-                        )
-                      ),
+                  bag2_count:
+                    Math.max(
+                      0,
+                      Number(
+                        order.bag2Count ||
+                        0
+                      )
+                    ),
 
-                    bag2_count:
-                      Math.max(
-                        0,
-                        Number(
-                          order.bag2Count || 0
-                        )
-                      ),
+                  pickup_time:
+                    order.customer?.pickupDateTime ||
+                    null,
 
-                    pickup_time:
-                      order.customer?.pickupDateTime ||
-                      null,
+                  notes:
+                    order.customer?.note ||
+                    null,
 
-                    notes:
-                      order.customer?.note ||
-                      null,
+                  order_status:
+                    order.status ||
+                    "new",
 
-                    order_status:
-                      order.status ||
-                      "new",
-
-                    created_at:
-                      order.createdAt
-                  })
-                );
-            }
+                  created_at:
+                    order.createdAt
+                })
+              );
 
           } catch (
             localError
@@ -1742,7 +1938,8 @@ const server =
                   Math.max(
                     0,
                     Number(
-                      row.bag1_count || 0
+                      row.bag1_count ||
+                      0
                     )
                   );
 
@@ -1750,7 +1947,8 @@ const server =
                   Math.max(
                     0,
                     Number(
-                      row.bag2_count || 0
+                      row.bag2_count ||
+                      0
                     )
                   );
 
@@ -1840,6 +2038,7 @@ const server =
                   if (
                     bag1Count > 0
                   ) {
+
                     itemsHtml +=
                       `<br>1杯袋：${bag1Count} 個`;
                   }
@@ -1847,6 +2046,7 @@ const server =
                   if (
                     bag2Count > 0
                   ) {
+
                     itemsHtml +=
                       `<br>2～8杯袋：${bag2Count} 個`;
                   }
@@ -1929,9 +2129,23 @@ const server =
 </td>
 
 <td>
-  ${escapeHtml(
-    status
-  )}
+  <span class="status">
+    ${escapeHtml(
+      status
+    )}
+  </span>
+</td>
+
+<td>
+  <button
+    class="delete-btn"
+    type="button"
+    data-order-number="${escapeHtml(
+      orderNumber
+    )}"
+  >
+    🗑️ 刪除
+  </button>
 </td>
 
 </tr>
@@ -2106,6 +2320,23 @@ tr:hover td {
     #eee4d8;
 }
 
+.delete-btn {
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 14px;
+  background: #8f2f27;
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.delete-btn:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
 .empty {
 
   padding:
@@ -2182,6 +2413,10 @@ tr:hover td {
   狀態
 </th>
 
+<th>
+  操作
+</th>
+
 </tr>
 
 </thead>
@@ -2193,7 +2428,7 @@ ${
   `
 <tr>
 <td
-  colspan="6"
+  colspan="7"
   class="empty"
 >
   目前沒有訂單
@@ -2209,6 +2444,97 @@ ${
 </div>
 
 </main>
+
+<script>
+  document
+    .querySelectorAll(".delete-btn")
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        async () => {
+
+          const orderNumber =
+            button.dataset.orderNumber;
+
+          if (
+            !confirm(
+              "確定要刪除訂單 " +
+              orderNumber +
+              " 嗎？\n\n刪除後會同步從 Supabase 移除，無法復原。"
+            )
+          ) {
+            return;
+          }
+
+          const key =
+            new URLSearchParams(
+              window.location.search
+            ).get("key") || "";
+
+          button.disabled =
+            true;
+
+          button.textContent =
+            "刪除中…";
+
+          try {
+
+            const response =
+              await fetch(
+                "/api/admin/orders/" +
+                encodeURIComponent(
+                  orderNumber
+                ) +
+                "?key=" +
+                encodeURIComponent(
+                  key
+                ),
+                {
+                  method:
+                    "DELETE"
+                }
+              );
+
+            const result =
+              await response
+                .json()
+                .catch(
+                  () => ({})
+                );
+
+            if (
+              !response.ok ||
+              !result.ok
+            ) {
+
+              throw new Error(
+                result.message ||
+                "刪除訂單失敗"
+              );
+            }
+
+            window.location.reload();
+
+          } catch (
+            error
+          ) {
+
+            alert(
+              error.message ||
+              "刪除訂單失敗"
+            );
+
+            button.disabled =
+              false;
+
+            button.textContent =
+              "🗑️ 刪除";
+          }
+        }
+      );
+    });
+</script>
 
 </body>
 
