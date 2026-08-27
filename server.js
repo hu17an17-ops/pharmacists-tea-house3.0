@@ -15,6 +15,14 @@ const SUPABASE_KEY=()=>String(process.env.SUPABASE_SERVICE_ROLE_KEY||'').trim();
 const hasSupabase=()=>!!(SUPABASE_URL()&&SUPABASE_KEY());
 const adminKey=()=>String(process.env.ADMIN_KEY||'change-me').trim();
 
+// LINE Login callback：固定使用正式 Render 網址，避免 /api 與 /auth 來回切換造成 redirect_uri 不一致。
+function lineLoginCallbackUrl(){
+  const configured=String(process.env.LINE_LOGIN_CALLBACK_URL||'').trim();
+  const fallback='https://ouse.onrender.com/auth/line/callback';
+  const value=configured||fallback;
+  return value.replace(/\/api\/line\/callback\/?$/i,'/auth/line/callback').replace(/\/+$/,'');
+}
+
 // LINE Login：請使用同一 Provider 下另外建立的 LINE Login channel。
 // Messaging API 的 Channel ID/Secret 不能直接當作 LINE Login channel 使用。
 const LINE_LOGIN_ENV_NOTE=true;
@@ -232,8 +240,7 @@ function cookieValue(value){
 function lineLoginConfigured(){
   return Boolean(
     String(process.env.LINE_LOGIN_CHANNEL_ID || '').trim() &&
-    String(process.env.LINE_LOGIN_CHANNEL_SECRET || '').trim() &&
-    String(process.env.LINE_LOGIN_CALLBACK_URL || '').trim()
+    String(process.env.LINE_LOGIN_CHANNEL_SECRET || '').trim()
   );
 }
 
@@ -388,9 +395,7 @@ async function lineLoginToken(code){
 
   params.set(
     'redirect_uri',
-    String(
-      process.env.LINE_LOGIN_CALLBACK_URL || ''
-    ).trim()
+    lineLoginCallbackUrl()
   );
 
   params.set(
@@ -1545,9 +1550,7 @@ u.pathname==='/api/line/login'
 
   params.set(
     'redirect_uri',
-    String(
-      process.env.LINE_LOGIN_CALLBACK_URL
-    ).trim()
+    lineLoginCallbackUrl()
   );
 
   params.set(
@@ -1576,7 +1579,7 @@ u.pathname==='/api/line/login'
 
 if(
 req.method==='GET'&&
-u.pathname==='/api/line/callback'
+(u.pathname==='/auth/line/callback'||u.pathname==='/api/line/callback')
 ){
   if(!lineLoginConfigured()){
     return send(
@@ -1720,7 +1723,7 @@ u.pathname==='/api/line/callback'
 
 if(
 req.method==='GET'&&
-u.pathname==='/api/line/me'
+(u.pathname==='/api/line/me'||u.pathname==='/api/line/status')
 ){
   const lineUserId =
     lineUserIdFromRequest(req);
