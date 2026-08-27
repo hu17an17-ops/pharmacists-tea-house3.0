@@ -304,7 +304,11 @@
           name="pickupDateTime"
           required
         >
-          <option value="">請選擇取餐時間</option>
+
+          <option value="">
+            請選擇取餐時間
+          </option>
+
         </select>
 
       </label>
@@ -328,7 +332,7 @@
 
         溫馨提醒：線上預訂會直接開立發票，如訂購杯數較多，製作時間較長，
         請提前訂購或來電詢問，謝謝。
-        
+
 
       </div>
 
@@ -513,9 +517,10 @@
         "
       >
 
-        到店取餐時，請向店員出示您的 
+        到店取餐時，請向店員出示您的
+
         <strong style="color:#963028;">
-           訂單編號
+          訂單編號
         </strong>。
 
 
@@ -523,8 +528,9 @@
 
 
         並依訂單編號到店取餐，
+
         <strong>
-           現場付款。
+          現場付款。
         </strong>
 
       </div>
@@ -546,6 +552,7 @@
 
       </div>
 
+
     </div>
 
 
@@ -565,250 +572,15 @@
 
 <!--
   ============================================================
-  取餐時間自動選擇功能
+  載入主要 JavaScript
   ============================================================
-
-  規則：
-  1. 客人不能自行輸入取餐時間。
-  2. 以當下時間往後至少 15 分鐘開始。
-  3. 每 5 分鐘提供一個時段。
-  4. 提供未來 2 小時的選擇。
-  5. 每分鐘自動重新整理時間。
-  6. 開啟確認訂單時重新整理。
-  7. 送出訂單前再次重新整理。
+  
+  取餐時間現在完全交給 app.js 控制。
+  
+  HTML 不再另外建立取餐時間，
+  避免與 app.js 的新邏輯互相覆蓋。
   ============================================================
 -->
-
-<script>
-
-(function () {
-
-  const pickupSelect =
-    document.getElementById("pickupDateTime");
-
-
-  if (!pickupSelect) {
-    return;
-  }
-
-
-  function pad(n) {
-
-    return String(n).padStart(2, "0");
-
-  }
-
-
-  function updatePickupTimes() {
-
-    const now = new Date();
-
-
-    /*
-      往後 15 分鐘。
-
-      例如：
-      現在 14:17
-      +15 分鐘 = 14:32
-
-      再往上取到下一個 5 分鐘時段
-      → 14:35
-    */
-
-    const first =
-      new Date(
-        now.getTime() +
-        15 * 60 * 1000
-      );
-
-
-    first.setSeconds(0, 0);
-
-
-    const remainder =
-      first.getMinutes() % 5;
-
-
-    if (remainder !== 0) {
-
-      first.setMinutes(
-        first.getMinutes() +
-        (5 - remainder)
-      );
-
-    }
-
-
-    /*
-      如果客人已經選過時間，
-      更新選項後盡量保留原本選擇。
-    */
-
-    const currentValue =
-      pickupSelect.value;
-
-
-    pickupSelect.innerHTML =
-      '<option value="">請選擇取餐時間</option>';
-
-
-    /*
-      提供未來 2 小時的時段。
-      每 5 分鐘一個選項。
-    */
-
-    for (
-      let i = 0;
-      i < 24;
-      i++
-    ) {
-
-      const time =
-        new Date(
-          first.getTime() +
-          i * 5 * 60 * 1000
-        );
-
-
-      const month =
-        time.getMonth() + 1;
-
-
-      const day =
-        time.getDate();
-
-
-      const hours =
-        time.getHours();
-
-
-      const minutes =
-        time.getMinutes();
-
-
-      const value =
-        `${month}/${day} ${pad(hours)}:${pad(minutes)}`;
-
-
-      const option =
-        document.createElement("option");
-
-
-      option.value =
-        value;
-
-
-      option.textContent =
-        value;
-
-
-      pickupSelect.appendChild(
-        option
-      );
-
-    }
-
-
-    /*
-      如果原本選擇的時間仍然存在，
-      就保留原本的選擇。
-    */
-
-    if (currentValue) {
-
-      const exists =
-        Array.from(
-          pickupSelect.options
-        ).some(
-          option =>
-            option.value === currentValue
-        );
-
-
-      if (exists) {
-
-        pickupSelect.value =
-          currentValue;
-
-      }
-
-    }
-
-  }
-
-
-  /*
-    頁面載入時先產生一次。
-  */
-
-  updatePickupTimes();
-
-
-  /*
-    每分鐘更新一次，
-    避免客人停留太久後選到過期時間。
-  */
-
-  setInterval(
-    updatePickupTimes,
-    60 * 1000
-  );
-
-
-  /*
-    客人按下「查看訂單」時，
-    再重新計算一次。
-  */
-
-  document.addEventListener(
-    "click",
-    function (event) {
-
-      if (
-        event.target.closest(
-          "#cartButton"
-        )
-      ) {
-
-        updatePickupTimes();
-
-      }
-
-    }
-  );
-
-
-  /*
-    送出訂單前，
-    再重新整理一次時間。
-  */
-
-  const form =
-    document.getElementById(
-      "orderForm"
-    );
-
-
-  if (form) {
-
-    form.addEventListener(
-      "submit",
-      function () {
-
-        updatePickupTimes();
-
-      },
-      true
-    );
-
-  }
-
-
-})();
-
-</script>
-
-
 
 <script src="/app.js"></script>
 
