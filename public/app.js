@@ -108,7 +108,7 @@ const products = [
 
   {
     id: 13,
-    category: "戰豆奶茶",
+    category: "鮮奶茶系列",
     name: "戰豆奶茶",
     subtitle: "非基改豆漿＋紅茶",
     price: 50
@@ -365,7 +365,6 @@ function render(filter = "全部") {
 
     "鮮奶茶系列": "#milkTea",
 
-    "戰豆奶茶": "#soyTea"
 
   };
 
