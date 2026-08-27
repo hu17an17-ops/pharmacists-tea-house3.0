@@ -26,7 +26,8 @@ async function supabase(endpoint,o={}){
         apikey:SUPABASE_KEY(),
         Authorization:`Bearer ${SUPABASE_KEY()}`,
         'Content-Type':'application/json',
-        Prefer:o.prefer||'return=representation'
+        Prefer:o.prefer||'return=representation',
+        ...(o.headers||{})
       },
       body:o.body===undefined?undefined:JSON.stringify(o.body)
     }
@@ -142,7 +143,8 @@ function num(v){
 }
 
 // 客人、後台與 Telegram 全部使用同一組訂單編號。
-// Supabase 仍保留數字 order_number 作為內部資料庫索引，不需要修改資料表。
+// 新格式：PTH + YYYYMMDD + 當日流水號，例如 PTH2026082801。
+// Supabase 仍使用數字 order_number 儲存，例如 2026082801。
 function makeOrderId(orderNumber){
   const n=Math.floor(num(orderNumber));
 
@@ -150,6 +152,12 @@ function makeOrderId(orderNumber){
     return '';
   }
 
+  // 新版日期＋流水號格式（至少 10 碼）
+  if(n>=2000010101 && n<=9999123199){
+    return `PTH${String(n)}`;
+  }
+
+  // 舊訂單保留原本格式，避免既有訂單無法查詢。
   const prefix=n
     .toString(36)
     .toUpperCase();
@@ -164,6 +172,67 @@ function makeOrderId(orderNumber){
   return `T${prefix}${suffix}`;
 }
 
+// 取得台灣當天的日期字串。
+function taiwanDateParts(){
+  const parts=new Intl.DateTimeFormat('en-CA',{
+    timeZone:'Asia/Taipei',
+    year:'numeric',
+    month:'2-digit',
+    day:'2-digit'
+  }).formatToParts(new Date());
+
+  const get=t=>parts.find(x=>x.type===t)?.value||'';
+  return {
+    year:get('year'),
+    month:get('month'),
+    day:get('day')
+  };
+}
+
+async function getNextOrderNumber(){
+  const {year,month,day}=taiwanDateParts();
+  const dateCode=`${year}${month}${day}`;
+  const base=Number(dateCode)*100;
+  const upper=base+100;
+
+  let latest=0;
+
+  try{
+    const rows=await supabase(
+      `orders?order_number=gte.${base+1}&order_number=lt.${upper}&order=order_number.desc&limit=1`
+    );
+
+    const last=Array.isArray(rows)
+      ?num(rows[0]?.order_number)
+      :0;
+
+    if(last>=base+1 && last<upper){
+      latest=Math.floor(last-base);
+    }
+  }catch(e){
+    console.error('取得今日訂單流水號失敗',e.message);
+  }
+
+  // 若雲端查不到，從本機備份找今天的最大流水號作為備援。
+  if(!latest){
+    const local=readOrders();
+    for(const row of local){
+      const n=Math.floor(num(row.orderNumber));
+      if(n>=base+1 && n<upper){
+        latest=Math.max(latest,n-base);
+      }
+    }
+  }
+
+  const seq=latest+1;
+
+  if(seq>999){
+    throw Error('今日訂單編號已超過 999 筆，請聯絡管理員。');
+  }
+
+  return base+seq;
+}
+
 // 同時接受資料庫內部數字編號與對外顯示的訂單編號。
 function resolveOrderNumber(value){
   const raw=String(value??'')
@@ -174,6 +243,16 @@ function resolveOrderNumber(value){
     return Math.floor(num(raw));
   }
 
+  // 新版 PTH2026082801 格式。
+  if(/^PTH\d{10,}$/.test(raw)){
+    const n=Number(raw.slice(3));
+    if(Number.isSafeInteger(n) && makeOrderId(n)===raw){
+      return n;
+    }
+    return 0;
+  }
+
+  // 舊版 T... 訂單編號仍可查詢。
   if(!/^T[A-Z0-9]+$/.test(raw)||raw.length<8){
     return 0;
   }
@@ -1279,7 +1358,7 @@ bag1+
 bag2*2;
 
 const orderNumber=
-Date.now();
+await getNextOrderNumber();
 
 const id=
 makeOrderId(orderNumber);
