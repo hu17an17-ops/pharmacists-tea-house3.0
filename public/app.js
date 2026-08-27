@@ -69,6 +69,7 @@ const products = [
 
   /* =====================================================
      鮮奶茶系列
+     戰豆奶茶也放在這裡
      ===================================================== */
 
   {
@@ -151,7 +152,6 @@ const iceOptions = [
    ========================================================= */
 
 const cart = [];
-
 
 
 /* =========================================================
@@ -335,6 +335,10 @@ function render(filter = "全部") {
     qs("#soyTea");
 
 
+  /*
+    清空商品區
+  */
+
   if (blackTea) {
 
     blackTea.innerHTML = "";
@@ -357,7 +361,10 @@ function render(filter = "全部") {
 
 
   /*
-    戰豆奶茶屬於鮮奶茶系列
+    分類對應
+
+    戰豆奶茶現在屬於鮮奶茶系列，
+    所以不再使用 #soyTea。
   */
 
   const groups = {
@@ -368,6 +375,10 @@ function render(filter = "全部") {
 
   };
 
+
+  /*
+    放入商品
+  */
 
   products
     .filter(
@@ -402,6 +413,10 @@ function render(filter = "全部") {
     );
 
 
+  /*
+    綁定加入購物車
+  */
+
   document
     .querySelectorAll("[data-add]")
     .forEach(button => {
@@ -418,6 +433,10 @@ function render(filter = "全部") {
 
     });
 
+
+  /*
+    分類按鈕 active
+  */
 
   document
     .querySelectorAll(".tabs button")
@@ -446,69 +465,344 @@ function add(id) {
         item.id === id
     );
 
-
   if (!product) {
-
     return;
-
   }
 
+  /*
+    客人按「＋ 選擇」後，
+    先選甜度與冰度，再加入購物車。
+  */
+  openProductOptions(product);
+}
 
+
+/* =========================================================
+   商品甜度 / 冰度選擇視窗
+   ========================================================= */
+
+function ensureProductOptionsModal() {
+
+  if (qs("#productOptionsModal")) {
+    return qs("#productOptionsModal");
+  }
+
+  const style = document.createElement("style");
+
+  style.id = "productOptionsModalStyle";
+
+  style.textContent = `
+    #productOptionsModal {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.48);
+    }
+
+    #productOptionsModal.open {
+      display: flex;
+    }
+
+    #productOptionsModal .product-options-box {
+      width: min(92vw, 480px);
+      max-height: 88vh;
+      overflow-y: auto;
+      background: #fff;
+      border-radius: 24px;
+      padding: 24px;
+      box-sizing: border-box;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+    }
+
+    #productOptionsModal .product-options-title {
+      margin: 0 0 6px;
+      font-size: 25px;
+      font-weight: 800;
+      color: #2d211d;
+    }
+
+    #productOptionsModal .product-options-price {
+      margin: 0 0 22px;
+      color: #a8322b;
+      font-size: 23px;
+      font-weight: 800;
+    }
+
+    #productOptionsModal .product-options-label {
+      display: block;
+      margin: 18px 0 8px;
+      font-size: 18px;
+      font-weight: 800;
+      color: #2d211d;
+    }
+
+    #productOptionsModal select {
+      width: 100%;
+      min-height: 52px;
+      padding: 10px 14px;
+      border: 1px solid #dccfc2;
+      border-radius: 13px;
+      background: #fff;
+      color: #2d211d;
+      font-size: 17px;
+      box-sizing: border-box;
+    }
+
+    #productOptionsModal .product-options-actions {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    #productOptionsModal button {
+      min-height: 52px;
+      border-radius: 14px;
+      font-size: 17px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    #productOptionsModal .product-options-cancel {
+      border: 1px solid #dccfc2;
+      background: #fff;
+      color: #5b4b43;
+    }
+
+    #productOptionsModal .product-options-confirm {
+      border: 0;
+      background: #a8322b;
+      color: #fff;
+    }
+
+    @media (max-width: 480px) {
+      #productOptionsModal {
+        padding: 14px;
+      }
+
+      #productOptionsModal .product-options-box {
+        width: 100%;
+        border-radius: 22px;
+        padding: 20px;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+
+  const modal = document.createElement("div");
+
+  modal.id = "productOptionsModal";
+
+  modal.innerHTML = `
+    <div
+      class="product-options-box"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="productOptionsTitle"
+    >
+      <h2
+        id="productOptionsTitle"
+        class="product-options-title"
+      ></h2>
+
+      <p
+        id="productOptionsPrice"
+        class="product-options-price"
+      ></p>
+
+      <label
+        class="product-options-label"
+        for="productSweetnessSelect"
+      >
+        甜度
+      </label>
+
+      <select id="productSweetnessSelect"></select>
+
+      <label
+        class="product-options-label"
+        for="productIceSelect"
+      >
+        冰塊
+      </label>
+
+      <select id="productIceSelect"></select>
+
+      <div class="product-options-actions">
+        <button
+          type="button"
+          class="product-options-cancel"
+          id="productOptionsCancel"
+        >
+          取消
+        </button>
+
+        <button
+          type="button"
+          class="product-options-confirm"
+          id="productOptionsConfirm"
+        >
+          加入購物車
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  modal.addEventListener("click", event => {
+    if (event.target === modal) {
+      closeProductOptions();
+    }
+  });
+
+  qs("#productOptionsCancel").onclick = () => {
+    closeProductOptions();
+  };
+
+  return modal;
+}
+
+
+let pendingProduct = null;
+
+
+function openProductOptions(product) {
+
+  const modal = ensureProductOptionsModal();
+
+  pendingProduct = product;
+
+  const title = qs("#productOptionsTitle");
+  const price = qs("#productOptionsPrice");
+  const sweetnessSelect = qs("#productSweetnessSelect");
+  const iceSelect = qs("#productIceSelect");
+
+  if (!title || !price || !sweetnessSelect || !iceSelect) {
+    return;
+  }
+
+  title.textContent = product.name;
+  price.textContent = money(product.price);
+
+  sweetnessSelect.innerHTML = sweetnessOptions
+    .map(
+      value =>
+        `<option value="${value}" ${value === "十分" ? "selected" : ""}>${value}</option>`
+    )
+    .join("");
+
+  iceSelect.innerHTML = iceOptions
+    .map(
+      value =>
+        `<option value="${value}" ${value === "正常冰" ? "selected" : ""}>${value}</option>`
+    )
+    .join("");
+
+  modal.classList.add("open");
+}
+
+
+function closeProductOptions() {
+
+  const modal = qs("#productOptionsModal");
+
+  if (modal) {
+    modal.classList.remove("open");
+  }
+
+  pendingProduct = null;
+}
+
+
+function confirmProductOptions() {
+
+  if (!pendingProduct) {
+    return;
+  }
+
+  const sweetnessSelect = qs("#productSweetnessSelect");
+  const iceSelect = qs("#productIceSelect");
+
+  const sweetness =
+    sweetnessSelect
+      ? sweetnessSelect.value
+      : "十分";
+
+  const ice =
+    iceSelect
+      ? iceSelect.value
+      : "正常冰";
+
+  /*
+    同商品、同甜度、同冰度才合併數量。
+    不同甜度或冰度會分開顯示，避免做錯飲料。
+  */
   const found =
     cart.find(
       item =>
-        item.id === id &&
-        item.sweetness === "十分" &&
-        item.ice === "正常冰"
+        item.id === pendingProduct.id &&
+        item.sweetness === sweetness &&
+        item.ice === ice
     );
 
-
   if (found) {
-
     found.quantity += 1;
-
   } else {
-
     cart.push({
-
       id:
-        product.id,
+        pendingProduct.id,
 
       name:
-        product.name,
+        pendingProduct.name,
 
       subtitle:
-        product.subtitle,
+        pendingProduct.subtitle,
 
       price:
-        product.price,
+        pendingProduct.price,
 
       quantity:
         1,
 
-      sweetness:
-        "十分",
+      sweetness,
 
-      ice:
-        "正常冰"
-
+      ice
     });
-
   }
 
+  const productName = pendingProduct.name;
+
+  closeProductOptions();
 
   updateCart();
+  renderCart();
 
   toast(
-    `${product.name} 已加入訂單`
+    `${productName}｜${sweetness}｜${ice} 已加入訂單`
   );
-
 }
 
 
+if (typeof document !== "undefined") {
+  document.addEventListener("click", event => {
+    if (
+      event.target &&
+      event.target.id === "productOptionsConfirm"
+    ) {
+      confirmProductOptions();
+    }
+  });
+}
+
 
 /* =========================================================
-   飲料總杯數
+   計算飲料杯數
    ========================================================= */
 
 function getDrinkCount() {
@@ -539,6 +833,15 @@ function getDrinkCount() {
 
 /* =========================================================
    依杯數計算製作時間
+   =========================================================
+
+   1～2 杯    15 分鐘
+   3～4 杯    20 分鐘
+   5～6 杯    25 分鐘
+   7～8 杯    30 分鐘
+   9～10 杯   40 分鐘
+   11～15 杯  50 分鐘
+   16 杯以上  60 分鐘
    ========================================================= */
 
 function getPreparationMinutes() {
@@ -613,9 +916,20 @@ function pad(number) {
 
 
 /* =========================================================
-   判斷營業日
+   判斷是否營業日
+   =========================================================
+
+   JavaScript：
+   0 = 星期日
+   1 = 星期一
+   2 = 星期二
+   3 = 星期三
+   4 = 星期四
+   5 = 星期五
+   6 = 星期六
+
+   店家：
    週三～週日營業
-   週一、週二公休
    ========================================================= */
 
 function isBusinessDay(date) {
@@ -634,400 +948,17 @@ function isBusinessDay(date) {
 
 
 /* =========================================================
-   更新取餐時間
-   =========================================================
-
-   規則：
-
-   ① 只提供「今天」
-
-   ② 最早時間：
-      現在時間 + 依杯數計算的製作時間
-
-   ③ 每 5 分鐘一個時段
-
-   ④ 最晚取餐時間 22:00
-
-   ⑤ 21:30 後停止接單
-
-   ⑥ 週一、週二公休
+   日期顯示
    ========================================================= */
 
-function updatePickupTimeOptions() {
+function formatDate(date) {
 
-  const input =
-    document.querySelector(
-      '[name="pickupDateTime"]'
-    );
+  const month =
+    date.getMonth() + 1;
 
 
-  if (!input) {
-
-    return;
-
-  }
-
-
-  let select =
-    input;
-
-
-  /*
-    如果目前不是 select，
-    自動轉成 select。
-  */
-
-  if (
-    input.tagName.toLowerCase() !==
-    "select"
-  ) {
-
-    select =
-      document.createElement(
-        "select"
-      );
-
-
-    if (input.className) {
-
-      select.className =
-        input.className;
-
-    }
-
-
-    if (input.id) {
-
-      select.id =
-        input.id;
-
-    } else {
-
-      select.id =
-        "pickupDateTime";
-
-    }
-
-
-    select.name =
-      "pickupDateTime";
-
-
-    select.required =
-      true;
-
-
-    input.replaceWith(
-      select
-    );
-
-  }
-
-
-  const oldValue =
-    select.value;
-
-
-  const now =
-    new Date();
-
-
-  /*
-    =====================================================
-    21:30 後停止提供今天的取餐選擇
-    =====================================================
-  */
-
-  const cutoff =
-    new Date(now);
-
-
-  cutoff.setHours(
-    21,
-    30,
-    0,
-    0
-  );
-
-
-  /*
-    =====================================================
-    今天
-    =====================================================
-  */
-
-  const today =
-    new Date(now);
-
-
-  today.setHours(
-    0,
-    0,
-    0,
-    0
-  );
-
-
-  /*
-    清空選單
-  */
-
-  select.innerHTML = "";
-
-
-  /*
-    預設選項
-  */
-
-  const placeholder =
-    document.createElement(
-      "option"
-    );
-
-
-  placeholder.value =
-    "";
-
-
-  placeholder.textContent =
-    "請選擇取餐時間";
-
-
-  select.appendChild(
-    placeholder
-  );
-
-
-  /*
-    如果今天是公休日
-  */
-
-  if (
-    !isBusinessDay(today)
-  ) {
-
-    const option =
-      document.createElement(
-        "option"
-      );
-
-
-    option.value =
-      "";
-
-
-    option.textContent =
-      "今日公休";
-
-
-    option.disabled =
-      true;
-
-
-    select.appendChild(
-      option
-    );
-
-
-    select.disabled =
-      true;
-
-
-    return;
-
-  }
-
-
-  /*
-    如果現在已經 21:30
-    就不提供今天的取餐時間。
-  */
-
-  if (
-    now >= cutoff
-  ) {
-
-    const option =
-      document.createElement(
-        "option"
-      );
-
-
-    option.value =
-      "";
-
-
-    option.textContent =
-      "今日已停止接單";
-
-
-    option.disabled =
-      true;
-
-
-    select.appendChild(
-      option
-    );
-
-
-    select.disabled =
-      true;
-
-
-    return;
-
-  }
-
-
-  select.disabled =
-    false;
-
-
-  /*
-    =====================================================
-    依杯數計算製作時間
-    =====================================================
-  */
-
-  const preparationMinutes =
-    getPreparationMinutes();
-
-
-  /*
-    最早取餐時間
-  */
-
-  let earliest =
-    new Date(
-      now.getTime() +
-      preparationMinutes *
-      60 *
-      1000
-    );
-
-
-  /*
-    向上取到下一個 5 分鐘
-  */
-
-  const remainder =
-    earliest.getMinutes() % 5;
-
-
-  if (
-    remainder !== 0
-  ) {
-
-    earliest.setMinutes(
-      earliest.getMinutes() +
-      (
-        5 -
-        remainder
-      )
-    );
-
-  }
-
-
-  earliest.setSeconds(
-    0
-  );
-
-
-  earliest.setMilliseconds(
-    0
-  );
-
-
-  /*
-    如果最早時間早於 11:00，
-    從 11:00 開始。
-  */
-
-  const opening =
-    new Date(today);
-
-
-  opening.setHours(
-    11,
-    0,
-    0,
-    0
-  );
-
-
-  if (
-    earliest < opening
-  ) {
-
-    earliest =
-      opening;
-
-  }
-
-
-  /*
-    最晚取餐時間 22:00
-  */
-
-  const lastPickup =
-    new Date(today);
-
-
-  lastPickup.setHours(
-    22,
-    0,
-    0,
-    0
-  );
-
-
-  /*
-    如果已經來不及在今天取餐
-  */
-
-  if (
-    earliest > lastPickup
-  ) {
-
-    const option =
-      document.createElement(
-        "option"
-      );
-
-
-    option.value =
-      "";
-
-
-    option.textContent =
-      "今日已無可用取餐時間";
-
-
-    option.disabled =
-      true;
-
-
-    select.appendChild(
-      option
-    );
-
-
-    return;
-
-  }
-
-
-  /*
-    =====================================================
-    建立今天的時間選項
-    =====================================================
-  */
-
-  const todayGroup =
-    document.createElement(
-      "optgroup"
-    );
+  const day =
+    date.getDate();
 
 
   const weekdayNames = [
@@ -1043,224 +974,224 @@ function updatePickupTimeOptions() {
 
   const weekday =
     weekdayNames[
-      today.getDay()
+      date.getDay()
     ];
 
 
-  todayGroup.label =
-    `今天 ${today.getMonth() + 1}/${today.getDate()}（週${weekday}）`;
-
-
-  /*
-    11:00～22:00
-    每 5 分鐘
-  */
-
-  for (
-    let hour = 11;
-    hour <= 22;
-    hour++
-  ) {
-
-    let minuteStart =
-      0;
-
-
-    /*
-      如果是最早時間所在的小時，
-      從最早分鐘開始。
-    */
-
-    if (
-      hour === earliest.getHours()
-    ) {
-
-      minuteStart =
-        earliest.getMinutes();
-
-    }
-
-
-    /*
-      如果最早時間已經超過這個小時，
-      不建立。
-    */
-
-    if (
-      hour <
-      earliest.getHours()
-    ) {
-
-      continue;
-
-    }
-
-
-    /*
-      對齊 5 分鐘
-    */
-
-    minuteStart =
-      Math.ceil(
-        minuteStart / 5
-      ) * 5;
-
-
-    for (
-      let minute = minuteStart;
-      minute <= 55;
-      minute += 5
-    ) {
-
-      /*
-        最晚只能 22:00
-      */
-
-      if (
-        hour === 22 &&
-        minute > 0
-      ) {
-
-        continue;
-
-      }
-
-
-      const time =
-        new Date(today);
-
-
-      time.setHours(
-        hour,
-        minute,
-        0,
-        0
-      );
-
-
-      /*
-        不可早於最早取餐時間
-      */
-
-      if (
-        time < earliest
-      ) {
-
-        continue;
-
-      }
-
-
-      /*
-        不可晚於 22:00
-      */
-
-      if (
-        time > lastPickup
-      ) {
-
-        continue;
-
-      }
-
-
-      const option =
-        document.createElement(
-          "option"
-        );
-
-
-      option.value =
-        `${today.getMonth() + 1}/${today.getDate()} ${pad(hour)}:${pad(minute)}`;
-
-
-      option.textContent =
-        `${pad(hour)}:${pad(minute)}`;
-
-
-      todayGroup.appendChild(
-        option
-      );
-
-    }
-
-  }
-
-
-  /*
-    加入今天
-  */
-
-  if (
-    todayGroup.children.length > 0
-  ) {
-
-    select.appendChild(
-      todayGroup
-    );
-
-  }
-
-
-  /*
-    保留原本選擇
-  */
-
-  if (oldValue) {
-
-    const option =
-      Array.from(
-        select.options
-      ).find(
-        item =>
-          item.value ===
-          oldValue
-      );
-
-
-    if (option) {
-
-      select.value =
-        oldValue;
-
-    }
-
-  }
-
-
-  /*
-    選單樣式
-  */
-
-  select.style.width =
-    "100%";
-
-
-  select.style.padding =
-    "12px";
-
-
-  select.style.borderRadius =
-    "10px";
-
-
-  select.style.border =
-    "1px solid #dccfc2";
-
-
-  select.style.background =
-    "#fff";
-
-
-  select.style.fontSize =
-    "16px";
+  return `${month}/${day}（週${weekday}）`;
 
 }
 
 
 
 /* =========================================================
-   更新購物車
+   建立指定日期的時間
+   ========================================================= */
+
+function createDateTime(
+  date,
+  hour,
+  minute
+) {
+
+  const result =
+    new Date(date);
+
+
+  result.setHours(
+    hour,
+    minute,
+    0,
+    0
+  );
+
+
+  return result;
+
+}
+
+
+
+/* =========================================================
+   取得下一個營業日
+   ========================================================= */
+
+function getNextBusinessDay(
+  date
+) {
+
+  const result =
+    new Date(date);
+
+
+  do {
+
+    result.setDate(
+      result.getDate() + 1
+    );
+
+  } while (
+    !isBusinessDay(result)
+  );
+
+
+  return result;
+
+}
+
+
+
+/* =========================================================
+   取餐時間選單
+   =========================================================
+
+   規則：
+
+   ① 今天
+      → 依杯數計算最早時間
+
+   ② 每天最晚 21:40
+
+   ③ 今天過了 21:40
+      → 不再顯示今天
+
+   ④ 明天開始
+      → 11:00～21:40
+
+   ⑤ 週一、週二自動跳過
+
+   ⑥ 提供未來 7 天內的營業日
+
+   ⑦ 每 5 分鐘一個選項
+
+   ⑧ 客人不能自行輸入
+   ========================================================= */
+
+function updatePickupTimeOptions() {
+
+  const input =
+    document.querySelector(
+      '[name="pickupDateTime"]'
+    );
+
+  if (!input) return;
+
+  let select = input;
+
+  if (input.tagName.toLowerCase() !== "select") {
+    select = document.createElement("select");
+    if (input.className) select.className = input.className;
+    select.id = input.id || "pickupDateTime";
+    select.name = "pickupDateTime";
+    select.required = true;
+    input.replaceWith(select);
+  }
+
+  const oldValue = select.value;
+  const now = new Date();
+
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+
+  select.innerHTML = "";
+
+  const firstOption = document.createElement("option");
+  firstOption.value = "";
+  firstOption.textContent = "請選擇今天的取餐時間";
+  select.appendChild(firstOption);
+
+  if (!isBusinessDay(today)) {
+    firstOption.textContent = "今日公休，無法下單";
+    return;
+  }
+
+  /* 最後下單時間：21:30 */
+  const orderCutoff = createDateTime(today, 21, 30);
+
+  if (now > orderCutoff) {
+    firstOption.textContent = "今日已停止接單";
+    return;
+  }
+
+  /* 依杯數計算最早取餐時間 */
+  const preparationMinutes = getPreparationMinutes();
+
+  let earliestToday = new Date(
+    now.getTime() + preparationMinutes * 60 * 1000
+  );
+
+  /* 向上對齊 5 分鐘 */
+  const minuteRemainder = earliestToday.getMinutes() % 5;
+
+  if (minuteRemainder !== 0) {
+    earliestToday.setMinutes(
+      earliestToday.getMinutes() + (5 - minuteRemainder)
+    );
+  }
+
+  earliestToday.setSeconds(0);
+  earliestToday.setMilliseconds(0);
+
+  /* 尚未到營業時間時，從 11:00 開始 */
+  const openingTime = createDateTime(today, 11, 0);
+
+  if (earliestToday < openingTime) {
+    earliestToday = openingTime;
+  }
+
+  /* 今日最後取餐時間：21:40 */
+  const lastPickupTime = createDateTime(today, 21, 40);
+
+  if (earliestToday > lastPickupTime) {
+    firstOption.textContent = "今日已無可預約取餐時間";
+    return;
+  }
+
+  const dateGroup = document.createElement("optgroup");
+  dateGroup.label = `${formatDate(today)}｜今天`;
+
+  for (
+    let time = new Date(earliestToday);
+    time <= lastPickupTime;
+    time.setMinutes(time.getMinutes() + 5)
+  ) {
+    const hour = time.getHours();
+    const minute = time.getMinutes();
+
+    const option = document.createElement("option");
+
+    option.value =
+      `${today.getMonth() + 1}/${today.getDate()} ${pad(hour)}:${pad(minute)}`;
+
+    option.textContent =
+      `${pad(hour)}:${pad(minute)}`;
+
+    dateGroup.appendChild(option);
+  }
+
+  select.appendChild(dateGroup);
+
+  if (oldValue) {
+    const option = Array.from(select.options).find(
+      item => item.value === oldValue
+    );
+
+    if (option) {
+      select.value = oldValue;
+    }
+  }
+
+  select.style.width = "100%";
+  select.style.padding = "12px";
+  select.style.borderRadius = "10px";
+  select.style.border = "1px solid #dccfc2";
+  select.style.background = "#fff";
+  select.style.fontSize = "16px";
+}
+
+
+/* =========================================================
+   更新購物車數量
    ========================================================= */
 
 function updateCart() {
@@ -1280,6 +1211,11 @@ function updateCart() {
 
   }
 
+
+  /*
+    購物車開啟時，
+    杯數改變就重新計算取餐時間。
+  */
 
   const dialog =
     qs("#cartDialog");
@@ -1342,6 +1278,10 @@ function renderCart() {
   }
 
 
+  /*
+    商品內容
+  */
+
   box.innerHTML =
 
     cart
@@ -1358,7 +1298,6 @@ function renderCart() {
             <strong>
               ${item.name}
             </strong>
-
            　
             ${money(item.price)}
 
@@ -1446,6 +1385,10 @@ function renderCart() {
       .join("");
 
 
+  /*
+    飲料總額
+  */
+
   const drinkTotal =
     cart.reduce(
       (
@@ -1459,10 +1402,18 @@ function renderCart() {
     );
 
 
+  /*
+    購物袋總額
+  */
+
   const bagTotal =
     bag1Count * 1 +
     bag2Count * 2;
 
+
+  /*
+    最終總額
+  */
 
   const total =
     drinkTotal +
@@ -1482,7 +1433,7 @@ function renderCart() {
 
 
   /*
-    減少
+    減少數量
   */
 
   document
@@ -1528,7 +1479,7 @@ function renderCart() {
 
 
   /*
-    增加
+    增加數量
   */
 
   document
@@ -1690,7 +1641,7 @@ if (closeCart) {
 
 
 /* =========================================================
-   Dialog 外部關閉
+   點擊 Dialog 外部關閉
    ========================================================= */
 
 const cartDialog =
@@ -1805,48 +1756,6 @@ if (orderForm) {
 
 
       /*
-        =====================================================
-        最後下單時間：21:30
-        =====================================================
-      */
-
-      const currentTime =
-        new Date();
-
-
-      const cutoffTime =
-        new Date(
-          currentTime
-        );
-
-
-      cutoffTime.setHours(
-        21,
-        30,
-        0,
-        0
-      );
-
-
-      if (
-        currentTime >=
-        cutoffTime
-      ) {
-
-        toast(
-          "今日已超過 21:30，停止接單"
-        );
-
-
-        updatePickupTimeOptions();
-
-
-        return;
-
-      }
-
-
-      /*
         沒有商品不能送出
       */
 
@@ -1862,7 +1771,44 @@ if (orderForm) {
 
 
       /*
-        更新取餐時間
+        今日最後下單時間：21:30
+      */
+
+      const currentTime = new Date();
+
+      const currentDate = new Date(
+        currentTime
+      );
+
+      currentDate.setHours(
+        0,
+        0,
+        0,
+        0
+      );
+
+      const orderCutoffTime =
+        createDateTime(
+          currentDate,
+          21,
+          30
+        );
+
+      if (
+        currentTime > orderCutoffTime
+      ) {
+
+        toast(
+          "今日已停止接單，最後下單時間為 21:30"
+        );
+
+        return;
+
+      }
+
+
+      /*
+        重新計算一次取餐時間
       */
 
       updatePickupTimeOptions();
@@ -1905,7 +1851,7 @@ if (orderForm) {
 
 
       /*
-        姓名
+        基本檢查
       */
 
       if (!name) {
@@ -1919,10 +1865,6 @@ if (orderForm) {
       }
 
 
-      /*
-        電話
-      */
-
       if (!phone) {
 
         toast(
@@ -1934,14 +1876,10 @@ if (orderForm) {
       }
 
 
-      /*
-        取餐時間
-      */
-
       if (!pickupDateTime) {
 
         toast(
-          "請選擇取餐時間"
+          "請選擇取餐日期與時間"
         );
 
         return;
@@ -1950,46 +1888,16 @@ if (orderForm) {
 
 
       /*
-        再確認一次目前時間
-        防止送出過程超過 21:30
+        杯數
       */
-
-      const submitTime =
-        new Date();
-
-
-      const submitCutoff =
-        new Date(
-          submitTime
-        );
-
-
-      submitCutoff.setHours(
-        21,
-        30,
-        0,
-        0
-      );
-
-
-      if (
-        submitTime >=
-        submitCutoff
-      ) {
-
-        toast(
-          "今日已超過 21:30，停止接單"
-        );
-
-
-        return;
-
-      }
-
 
       const cups =
         getDrinkCount();
 
+
+      /*
+        製作時間
+      */
 
       const preparationMinutes =
         getPreparationMinutes();
@@ -2045,6 +1953,10 @@ if (orderForm) {
 
         bag2Count,
 
+
+        /*
+          額外資料
+        */
 
         preparationMinutes,
 
@@ -2110,7 +2022,7 @@ if (orderForm) {
 
 
         /*
-          訂單成功
+          顯示成功
         */
 
         if (result) {
@@ -2308,7 +2220,9 @@ document
 
 render();
 
+
 updateCart();
+
 
 renderCart();
 
@@ -2333,6 +2247,11 @@ function initializePickupTimeField() {
   }
 
 
+  /*
+    如果還是 input，
+    改成 select。
+  */
+
   if (
     input.tagName.toLowerCase() !==
     "select"
@@ -2344,6 +2263,10 @@ function initializePickupTimeField() {
       );
 
 
+    /*
+      保留 class
+    */
+
     if (input.className) {
 
       select.className =
@@ -2351,6 +2274,10 @@ function initializePickupTimeField() {
 
     }
 
+
+    /*
+      保留 id
+    */
 
     select.id =
       input.id ||
@@ -2372,6 +2299,10 @@ function initializePickupTimeField() {
   }
 
 
+  /*
+    先建立選單
+  */
+
   updatePickupTimeOptions();
 
 }
@@ -2382,11 +2313,16 @@ initializePickupTimeField();
 
 
 /* =========================================================
-   每分鐘重新檢查
+   每分鐘重新計算取餐時間
    ========================================================= */
 
 setInterval(
   () => {
+
+    /*
+      只有購物車有飲料時，
+      才需要重新計算。
+    */
 
     if (
       cart.length > 0
