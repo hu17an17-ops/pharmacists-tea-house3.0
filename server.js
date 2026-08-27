@@ -1,282 +1,581 @@
-const http=require('http'),fs=require('fs'),path=require('path'),crypto=require('crypto');
-const {URL}=require('url');
+const http = require("http");
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
+const { URL } = require("url");
 
-const PORT=process.env.PORT||3000,
-PUBLIC_DIR=path.join(__dirname,'public'),
-DATA_DIR=path.join(__dirname,'data'),
-ORDERS_FILE=path.join(DATA_DIR,'orders.json');
+/* =========================================================
+   基本設定
+   ========================================================= */
 
-fs.mkdirSync(DATA_DIR,{recursive:true});
-if(!fs.existsSync(ORDERS_FILE))fs.writeFileSync(ORDERS_FILE,'[]','utf8');
+const PORT = Number(process.env.PORT || 3000);
 
-const env=n=>String(process.env[n]||'').trim().replace(/\/+$/,'');
-const SUPABASE_URL=()=>env('SUPABASE_URL');
-const SUPABASE_KEY=()=>String(process.env.SUPABASE_SERVICE_ROLE_KEY||'').trim();
-const hasSupabase=()=>!!(SUPABASE_URL()&&SUPABASE_KEY());
-const adminKey=()=>String(process.env.ADMIN_KEY||'change-me').trim();
+const PUBLIC_DIR = path.join(__dirname, "public");
+const DATA_DIR = path.join(__dirname, "data");
 
-// LINE Login：請使用同一 Provider 下另外建立的 LINE Login channel。
-// Messaging API 的 Channel ID/Secret 不能直接當作 LINE Login channel 使用。
-const LINE_LOGIN_ENV_NOTE=true;
+const ORDERS_FILE = path.join(
+  DATA_DIR,
+  "orders.json"
+);
 
-async function supabase(endpoint,o={}){
-  if(!hasSupabase())throw Error('沒有設定 SUPABASE_URL 或 SUPABASE_SERVICE_ROLE_KEY');
+const LINE_CUSTOMERS_FILE = path.join(
+  DATA_DIR,
+  "line-customers.json"
+);
 
-  const r=await fetch(
-    `${SUPABASE_URL()}/rest/v1/${endpoint}`,
-    {
-      method:o.method||'GET',
-      headers:{
-        apikey:SUPABASE_KEY(),
-        Authorization:`Bearer ${SUPABASE_KEY()}`,
-        'Content-Type':'application/json',
-        Prefer:o.prefer||'return=representation'
-      },
-      body:o.body===undefined?undefined:JSON.stringify(o.body)
-    }
+fs.mkdirSync(
+  DATA_DIR,
+  { recursive: true }
+);
+
+if (!fs.existsSync(ORDERS_FILE)) {
+  fs.writeFileSync(
+    ORDERS_FILE,
+    "[]",
+    "utf8"
+  );
+}
+
+if (!fs.existsSync(LINE_CUSTOMERS_FILE)) {
+  fs.writeFileSync(
+    LINE_CUSTOMERS_FILE,
+    "[]",
+    "utf8"
+  );
+}
+
+/* =========================================================
+   Environment
+   ========================================================= */
+
+function env(name) {
+  return String(
+    process.env[name] || ""
+  ).trim();
+}
+
+const SUPABASE_URL = () =>
+  env("SUPABASE_URL").replace(
+    /\/+$/,
+    ""
   );
 
-  const text=await r.text();
-  let data=null;
+const SUPABASE_KEY = () =>
+  env("SUPABASE_SERVICE_ROLE_KEY") ||
+  env("SUPABASE_ANON_KEY");
 
-  try{
-    data=text?JSON.parse(text):null;
-  }catch{
-    data=text;
+const ADMIN_KEY = () =>
+  env("ADMIN_KEY") ||
+  "change-me";
+
+const LINE_LOGIN_CHANNEL_ID = () =>
+  env("LINE_LOGIN_CHANNEL_ID");
+
+const LINE_LOGIN_CHANNEL_SECRET = () =>
+  env("LINE_LOGIN_CHANNEL_SECRET");
+
+const LINE_LOGIN_CALLBACK_URL = () =>
+  env("LINE_LOGIN_CALLBACK_URL");
+
+const LINE_CHANNEL_ACCESS_TOKEN = () =>
+  env("LINE_CHANNEL_ACCESS_TOKEN");
+
+const LINE_ADMIN_USER_ID = () =>
+  env("LINE_ADMIN_USER_ID");
+
+const LINE_SESSION_SECRET = () =>
+  env("LINE_SESSION_SECRET") ||
+  ADMIN_KEY();
+
+function hasSupabase() {
+  return Boolean(
+    SUPABASE_URL() &&
+    SUPABASE_KEY()
+  );
+}
+
+function lineLoginConfigured() {
+  return Boolean(
+    LINE_LOGIN_CHANNEL_ID() &&
+    LINE_LOGIN_CHANNEL_SECRET() &&
+    LINE_LOGIN_CALLBACK_URL()
+  );
+}
+
+function lineMessagingConfigured() {
+  return Boolean(
+    LINE_CHANNEL_ACCESS_TOKEN() &&
+    LINE_ADMIN_USER_ID()
+  );
+}
+
+/* =========================================================
+   JSON / File helpers
+   ========================================================= */
+
+function readJsonFile(
+  filename,
+  fallback
+) {
+  try {
+    const text =
+      fs.readFileSync(
+        filename,
+        "utf8"
+      );
+
+    const value =
+      JSON.parse(text);
+
+    return value;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJsonFile(
+  filename,
+  value
+) {
+  fs.writeFileSync(
+    filename,
+    JSON.stringify(
+      value,
+      null,
+      2
+    ),
+    "utf8"
+  );
+}
+
+/* =========================================================
+   Orders
+   ========================================================= */
+
+function readOrders() {
+  const orders =
+    readJsonFile(
+      ORDERS_FILE,
+      []
+    );
+
+  return Array.isArray(orders)
+    ? orders
+    : [];
+}
+
+function writeOrders(
+  orders
+) {
+  writeJsonFile(
+    ORDERS_FILE,
+    orders
+  );
+}
+
+/* =========================================================
+   LINE Customers
+   ========================================================= */
+
+function readLineCustomers() {
+  const customers =
+    readJsonFile(
+      LINE_CUSTOMERS_FILE,
+      []
+    );
+
+  return Array.isArray(
+    customers
+  )
+    ? customers
+    : [];
+}
+
+function writeLineCustomers(
+  customers
+) {
+  writeJsonFile(
+    LINE_CUSTOMERS_FILE,
+    customers
+  );
+}
+
+function findLineCustomer(
+  lineUserId
+) {
+  if (!lineUserId) {
+    return null;
   }
 
-  if(!r.ok){
-    throw Error(
-      `Supabase API ${r.status}: ${data?.message||data?.error||text}`
+  const customers =
+    readLineCustomers();
+
+  return (
+    customers.find(
+      customer =>
+        String(
+          customer.lineUserId || ""
+        ) ===
+        String(lineUserId)
+    ) ||
+    null
+  );
+}
+
+function saveLineCustomer(
+  customer
+) {
+  if (
+    !customer ||
+    !customer.lineUserId
+  ) {
+    return;
+  }
+
+  const customers =
+    readLineCustomers();
+
+  const index =
+    customers.findIndex(
+      item =>
+        String(
+          item.lineUserId || ""
+        ) ===
+        String(
+          customer.lineUserId
+        )
+    );
+
+  const value = {
+    ...customer,
+    updatedAt:
+      new Date().toISOString()
+  };
+
+  if (index >= 0) {
+    customers[index] = {
+      ...customers[index],
+      ...value
+    };
+  } else {
+    customers.push(value);
+  }
+
+  writeLineCustomers(
+    customers
+  );
+}
+
+/* =========================================================
+   Supabase
+   ========================================================= */
+
+async function supabase(
+  endpoint,
+  options = {}
+) {
+  if (!hasSupabase()) {
+    throw new Error(
+      "沒有設定 Supabase 環境變數"
+    );
+  }
+
+  const response =
+    await fetch(
+      `${SUPABASE_URL()}/rest/v1/${endpoint}`,
+      {
+        method:
+          options.method ||
+          "GET",
+
+        headers: {
+          apikey:
+            SUPABASE_KEY(),
+
+          Authorization:
+            `Bearer ${SUPABASE_KEY()}`,
+
+          "Content-Type":
+            "application/json",
+
+          Prefer:
+            options.prefer ||
+            "return=representation"
+        },
+
+        body:
+          options.body === undefined
+            ? undefined
+            : JSON.stringify(
+                options.body
+              )
+      }
+    );
+
+  const text =
+    await response.text();
+
+  let data;
+
+  try {
+    data =
+      text
+        ? JSON.parse(text)
+        : null;
+  } catch {
+    data = text;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `Supabase ${response.status}: ${
+        data?.message ||
+        data?.error ||
+        text
+      }`
     );
   }
 
   return data;
 }
 
-function readOrders(){
-  try{
-    return JSON.parse(
-      fs.readFileSync(ORDERS_FILE,'utf8')
-    );
-  }catch{
-    return [];
-  }
-}
-
-function writeOrders(x){
-  fs.writeFileSync(
-    ORDERS_FILE,
-    JSON.stringify(x,null,2),
-    'utf8'
-  );
-}
+/* =========================================================
+   HTTP helpers
+   ========================================================= */
 
 function send(
   res,
   status,
-  body,
-  type='application/json; charset=utf-8'
-){
+  data,
+  contentType =
+    "application/json; charset=utf-8"
+) {
   res.writeHead(
     status,
     {
-      'Content-Type':type,
-      'Cache-Control':'no-store',
-      'Access-Control-Allow-Origin':'*',
-      'Access-Control-Allow-Methods':
-        'GET,POST,PUT,DELETE,OPTIONS',
-      'Access-Control-Allow-Headers':
-        'Content-Type'
+      "Content-Type":
+        contentType,
+
+      "Cache-Control":
+        "no-store",
+
+      "Access-Control-Allow-Origin":
+        "*",
+
+      "Access-Control-Allow-Methods":
+        "GET,POST,PUT,DELETE,OPTIONS",
+
+      "Access-Control-Allow-Headers":
+        "Content-Type, X-Admin-Key"
     }
   );
 
-  res.end(
-    typeof body==='string'
-      ? body
-      : JSON.stringify(body)
+  if (
+    typeof data ===
+    "string"
+  ) {
+    res.end(data);
+  } else {
+    res.end(
+      JSON.stringify(data)
+    );
+  }
+}
+
+function redirect(
+  res,
+  location
+) {
+  res.writeHead(
+    302,
+    {
+      Location:
+        location
+    }
+  );
+
+  res.end();
+}
+
+function parseBody(req) {
+  return new Promise(
+    (resolve, reject) => {
+      let raw = "";
+
+      req.on(
+        "data",
+        chunk => {
+          raw += chunk;
+
+          if (
+            raw.length >
+            2 * 1024 * 1024
+          ) {
+            reject(
+              new Error(
+                "Request body too large"
+              )
+            );
+
+            req.destroy();
+          }
+        }
+      );
+
+      req.on(
+        "end",
+        () => {
+          try {
+            resolve(
+              JSON.parse(
+                raw || "{}"
+              )
+            );
+          } catch {
+            reject(
+              new Error(
+                "JSON 格式錯誤"
+              )
+            );
+          }
+        }
+      );
+
+      req.on(
+        "error",
+        reject
+      );
+    }
   );
 }
 
-function body(req){
-  return new Promise((resolve,reject)=>{
-    let s='';
-
-    req.on('data',c=>{
-      s+=c;
-
-      if(s.length>1048576){
-        reject(
-          Error('Request body too large')
-        );
-        req.destroy();
-      }
-    });
-
-    req.on('end',()=>{
-      try{
-        resolve(
-          JSON.parse(s||'{}')
-        );
-      }catch(e){
-        reject(e);
-      }
-    });
-
-    req.on('error',reject);
-  });
-}
-
-function esc(v){
-  return String(v??'').replace(
+function esc(value) {
+  return String(
+    value ?? ""
+  ).replace(
     /[&<>"']/g,
-    c=>({
-      '&':'&amp;',
-      '<':'&lt;',
-      '>':'&gt;',
-      '"':'&quot;',
-      "'":'&#39;'
-    }[c])
+    char => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[char])
   );
 }
 
-function num(v){
-  const n=Number(v);
-  return Number.isFinite(n)?n:0;
-}
+function num(value) {
+  const n =
+    Number(value);
 
-// 客人與後台全部使用同一組訂單編號。
-// Supabase 仍保留數字 order_number 作為內部資料庫索引，不需要修改資料表。
-function makeOrderId(orderNumber){
-  const n=Math.floor(num(orderNumber));
-
-  if(!n){
-    return '';
-  }
-
-  const prefix=n
-    .toString(36)
-    .toUpperCase();
-
-  const suffix=crypto
-    .createHash('sha256')
-    .update(String(n))
-    .digest('hex')
-    .slice(0,6)
-    .toUpperCase();
-
-  return `T${prefix}${suffix}`;
-}
-
-// 同時接受資料庫內部數字編號與對外顯示的訂單編號。
-function resolveOrderNumber(value){
-  const raw=String(value??'')
-    .trim()
-    .toUpperCase();
-
-  if(/^\d+$/.test(raw)){
-    return Math.floor(num(raw));
-  }
-
-  if(!/^T[A-Z0-9]+$/.test(raw)||raw.length<8){
-    return 0;
-  }
-
-  const encoded=raw.slice(1,-6);
-  const n=parseInt(encoded,36);
-
-  if(!Number.isFinite(n)||n<=0){
-    return 0;
-  }
-
-  return makeOrderId(n)===raw
+  return Number.isFinite(n)
     ? n
     : 0;
 }
 
+/* =========================================================
+   Cookie
+   ========================================================= */
 
-function parseCookies(req){
+function parseCookies(req) {
   const header =
-    String(req.headers.cookie || '');
+    String(
+      req.headers.cookie || ""
+    );
 
-  const out = {};
+  const cookies = {};
 
-  for(const part of header.split(';')){
-    const i = part.indexOf('=');
+  for (
+    const part of
+    header.split(";")
+  ) {
+    const index =
+      part.indexOf("=");
 
-    if(i < 0){
+    if (index < 0) {
       continue;
     }
 
     const key =
-      part.slice(0,i).trim();
+      part
+        .slice(0, index)
+        .trim();
 
     const value =
-      part.slice(i+1).trim();
+      part
+        .slice(index + 1)
+        .trim();
 
-    if(key){
-      out[key] =
-        decodeURIComponent(value);
+    if (!key) {
+      continue;
+    }
+
+    try {
+      cookies[key] =
+        decodeURIComponent(
+          value
+        );
+    } catch {
+      cookies[key] =
+        value;
     }
   }
 
-  return out;
+  return cookies;
 }
 
-function cookieValue(value){
+function cookieValue(
+  value
+) {
   return encodeURIComponent(
-    String(value ?? '')
+    String(
+      value ?? ""
+    )
   );
 }
 
-function lineLoginConfigured(){
-  return Boolean(
-    String(process.env.LINE_LOGIN_CHANNEL_ID || '').trim() &&
-    String(process.env.LINE_LOGIN_CHANNEL_SECRET || '').trim() &&
-    String(process.env.LINE_LOGIN_CALLBACK_URL || '').trim()
-  );
-}
+/* =========================================================
+   LINE Session
+   ========================================================= */
 
-function lineMessagingConfigured(){
-  return Boolean(
-    String(process.env.LINE_CHANNEL_ACCESS_TOKEN || '').trim() &&
-    String(process.env.LINE_ADMIN_USER_ID || '').trim()
-  );
-}
+function createLineSession(
+  userId
+) {
+  const issuedAt =
+    Math.floor(
+      Date.now() / 1000
+    );
 
-function lineSessionSecret(){
-  return String(
-    process.env.LINE_SESSION_SECRET ||
-    process.env.ADMIN_KEY ||
-    'change-me'
-  ).trim();
-}
-
-function signLineSession(userId, issuedAt=Math.floor(Date.now()/1000)){
   const raw =
     `${userId}.${issuedAt}`;
 
   const signature =
     crypto
       .createHmac(
-        'sha256',
-        lineSessionSecret()
+        "sha256",
+        LINE_SESSION_SECRET()
       )
       .update(raw)
-      .digest('base64url');
+      .digest("base64url");
 
-  return `${raw}.${signature}`;
+  return (
+    `${raw}.${signature}`
+  );
 }
 
-function verifyLineSession(value){
+function verifyLineSession(
+  value
+) {
   const raw =
-    String(value || '');
+    String(value || "");
 
   const parts =
-    raw.split('.');
+    raw.split(".");
 
-  if(parts.length !== 3){
-    return '';
+  if (
+    parts.length !== 3
+  ) {
+    return "";
   }
 
   const userId =
@@ -288,66 +587,69 @@ function verifyLineSession(value){
   const signature =
     parts[2];
 
-  if(
-    !/^U[0-9a-f]{32}$/i.test(userId) ||
-    !Number.isFinite(issuedAt) ||
+  if (
+    !userId ||
+    !Number.isFinite(
+      issuedAt
+    ) ||
     !signature
-  ){
-    return '';
+  ) {
+    return "";
   }
 
   const expected =
     crypto
       .createHmac(
-        'sha256',
-        lineSessionSecret()
+        "sha256",
+        LINE_SESSION_SECRET()
       )
-      .update(`${userId}.${issuedAt}`)
-      .digest('base64url');
+      .update(
+        `${userId}.${issuedAt}`
+      )
+      .digest("base64url");
 
-  if(
-    expected.length !== signature.length ||
-    !crypto.timingSafeEqual(
-      Buffer.from(expected),
-      Buffer.from(signature)
-    )
-  ){
-    return '';
+  if (
+    expected.length !==
+    signature.length
+  ) {
+    return "";
   }
+
+  if (
+    !crypto.timingSafeEqual(
+      Buffer.from(
+        expected
+      ),
+      Buffer.from(
+        signature
+      )
+    )
+  ) {
+    return "";
+  }
+
+  const now =
+    Math.floor(
+      Date.now() / 1000
+    );
 
   const maxAge =
     60 * 60 * 24 * 30;
 
-  if(
+  if (
     Math.abs(
-      Math.floor(Date.now()/1000) -
-      issuedAt
+      now - issuedAt
     ) > maxAge
-  ){
-    return '';
+  ) {
+    return "";
   }
 
   return userId;
 }
 
-function setLineSession(res,userId){
-  const value =
-    signLineSession(userId);
-
-  res.setHeader(
-    'Set-Cookie',
-    `line_session=${cookieValue(value)}; Max-Age=2592000; Path=/; HttpOnly; Secure; SameSite=Lax`
-  );
-}
-
-function clearLineSession(res){
-  res.setHeader(
-    'Set-Cookie',
-    'line_session=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax'
-  );
-}
-
-function lineUserIdFromRequest(req){
+function getLineUserId(
+  req
+) {
   const cookies =
     parseCookies(req);
 
@@ -356,104 +658,147 @@ function lineUserIdFromRequest(req){
   );
 }
 
-function safeReturnPath(value){
-  const raw =
-    String(value || '/').trim();
+function setLineSession(
+  res,
+  userId
+) {
+  const session =
+    createLineSession(
+      userId
+    );
 
-  if(
+  res.setHeader(
+    "Set-Cookie",
+    `line_session=${cookieValue(
+      session
+    )}; Max-Age=2592000; Path=/; HttpOnly; Secure; SameSite=Lax`
+  );
+}
+
+function clearLineSession(
+  res
+) {
+  res.setHeader(
+    "Set-Cookie",
+    "line_session=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax"
+  );
+}
+
+/* =========================================================
+   LINE OAuth state
+   ========================================================= */
+
+function safeReturnPath(
+  value
+) {
+  const raw =
+    String(
+      value || "/"
+    ).trim();
+
+  if (
     !raw ||
-    !raw.startsWith('/') ||
-    raw.startsWith('//') ||
-    raw.includes('\\')
-  ){
-    return '/';
+    !raw.startsWith("/") ||
+    raw.startsWith("//") ||
+    raw.includes("\\")
+  ) {
+    return "/";
   }
 
   return raw;
 }
 
-async function lineLoginToken(code){
+/* =========================================================
+   LINE Login Token
+   ========================================================= */
+
+async function exchangeLineCode(
+  code
+) {
   const params =
     new URLSearchParams();
 
   params.set(
-    'grant_type',
-    'authorization_code'
+    "grant_type",
+    "authorization_code"
   );
 
   params.set(
-    'code',
+    "code",
     code
   );
 
   params.set(
-    'redirect_uri',
-    String(
-      process.env.LINE_LOGIN_CALLBACK_URL || ''
-    ).trim()
+    "redirect_uri",
+    LINE_LOGIN_CALLBACK_URL()
   );
 
   params.set(
-    'client_id',
-    String(
-      process.env.LINE_LOGIN_CHANNEL_ID || ''
-    ).trim()
+    "client_id",
+    LINE_LOGIN_CHANNEL_ID()
   );
 
   params.set(
-    'client_secret',
-    String(
-      process.env.LINE_LOGIN_CHANNEL_SECRET || ''
-    ).trim()
+    "client_secret",
+    LINE_LOGIN_CHANNEL_SECRET()
   );
 
-  const r =
+  const response =
     await fetch(
-      'https://api.line.me/oauth2/v2.1/token',
+      "https://api.line.me/oauth2/v2.1/token",
       {
-        method:'POST',
-        headers:{
-          'Content-Type':
-            'application/x-www-form-urlencoded'
+        method:
+          "POST",
+
+        headers: {
+          "Content-Type":
+            "application/x-www-form-urlencoded"
         },
+
         body:
           params.toString()
       }
     );
 
   const text =
-    await r.text();
+    await response.text();
 
-  let data;
+  let data = {};
 
-  try{
+  try {
     data =
       text
-        ? JSON.parse(text)
+        ? JSON.parse(
+            text
+          )
         : {};
-  }catch{
-    data = {
-      raw:text
-    };
-  }
+  } catch {}
 
-  if(!r.ok){
-    throw Error(
+  if (
+    !response.ok
+  ) {
+    throw new Error(
       data.error_description ||
       data.error ||
-      `LINE Login token ${r.status}`
+      `LINE Token ${response.status}`
     );
   }
 
   return data;
 }
 
-async function lineProfile(accessToken){
-  const r =
+/* =========================================================
+   LINE Profile
+   ========================================================= */
+
+async function getLineProfile(
+  accessToken
+) {
+  const response =
     await fetch(
-      'https://api.line.me/v2/profile',
+      "https://api.line.me/v2/profile",
       {
-        headers:{
+        headers: {
           Authorization:
             `Bearer ${accessToken}`
         }
@@ -461,56 +806,79 @@ async function lineProfile(accessToken){
     );
 
   const text =
-    await r.text();
+    await response.text();
 
-  let data;
+  let data = {};
 
-  try{
+  try {
     data =
       text
-        ? JSON.parse(text)
+        ? JSON.parse(
+            text
+          )
         : {};
-  }catch{
-    data = {
-      raw:text
-    };
-  }
+  } catch {}
 
-  if(!r.ok){
-    throw Error(
+  if (
+    !response.ok
+  ) {
+    throw new Error(
       data.message ||
-      `LINE profile ${r.status}`
+      `LINE Profile ${response.status}`
     );
   }
 
   return data;
 }
 
-async function linePushText(userId,text){
-  if(!lineMessagingConfigured()){
-    throw Error(
-      '沒有設定 LINE_CHANNEL_ACCESS_TOKEN 或 LINE_ADMIN_USER_ID'
+/* =========================================================
+   LINE Messaging API
+   ========================================================= */
+
+async function linePushText(
+  userId,
+  text
+) {
+  if (
+    !LINE_CHANNEL_ACCESS_TOKEN()
+  ) {
+    throw new Error(
+      "沒有設定 LINE_CHANNEL_ACCESS_TOKEN"
     );
   }
 
-  const r =
+  const response =
     await fetch(
-      'https://api.line.me/v2/bot/message/push',
+      "https://api.line.me/v2/bot/message/push",
       {
-        method:'POST',
-        headers:{
+        method:
+          "POST",
+
+        headers: {
           Authorization:
-            `Bearer ${String(process.env.LINE_CHANNEL_ACCESS_TOKEN).trim()}`,
-          'Content-Type':
-            'application/json'
+            `Bearer ${LINE_CHANNEL_ACCESS_TOKEN()}`,
+
+          "Content-Type":
+            "application/json"
         },
+
         body:
           JSON.stringify({
-            to:userId,
-            messages:[
+            to:
+              userId,
+
+            messages: [
               {
-                type:'text',
-                text:String(text).slice(0,5000)
+                type:
+                  "text",
+
+                text:
+                  String(
+                    text
+                  ).slice(
+                    0,
+                    5000
+                  )
               }
             ]
           })
@@ -518,1553 +886,328 @@ async function linePushText(userId,text){
     );
 
   const textBody =
-    await r.text();
+    await response.text();
 
-  if(!r.ok){
-    let data={};
+  if (
+    !response.ok
+  ) {
+    let data = {};
 
-    try{
+    try {
       data =
         textBody
-          ? JSON.parse(textBody)
+          ? JSON.parse(
+              textBody
+            )
           : {};
-    }catch{}
+    } catch {}
 
-    throw Error(
+    throw new Error(
       data.message ||
-      data.details ||
-      `LINE push ${r.status}`
+      `LINE Push ${response.status}`
     );
   }
 }
+/* =========================================================
+   LINE 新訂單完整通知
+   ========================================================= */
 
-async function notifyLine(order){
-  const adminUserId =
-    String(
-      process.env.LINE_ADMIN_USER_ID || ''
-    ).trim();
-
-  if(!adminUserId){
-    throw Error(
-      '沒有設定 LINE_ADMIN_USER_ID'
+async function notifyLineNewOrder(
+  order
+) {
+  if (
+    !LINE_ADMIN_USER_ID() ||
+    !LINE_CHANNEL_ACCESS_TOKEN()
+  ) {
+    throw new Error(
+      "LINE 官方通知尚未完成設定"
     );
   }
 
-  const a=[
-    '🔔 新訂單通知',
-    '',
+  const lines = [];
+
+  lines.push(
+    "🔔 新訂單通知",
+    "",
     `訂單編號：${order.id}`,
-    `姓名：${order.customer.name}`,
-    `電話：${order.customer.phone}`,
-    `取餐時間：${order.customer.pickupDateTime}`,
-    ''
-  ];
-
-  if(order.lineUserId){
-    a.push(
-      '🟢 LINE 已綁定',
-      `LINE User ID：${order.lineUserId}`
-    );
-  }else{
-    a.push(
-      '⚪ 此訂單沒有 LINE 綁定'
-    );
-  }
-
-  a.push(
-    '',
-    '【訂購內容】'
+    `客人姓名：${order.customer.name}`,
+    `客人電話：${order.customer.phone}`,
+    `取餐時間：${order.customer.pickupDateTime}`
   );
 
-  for(const i of order.items || []){
-    let s =
-      `${i.name || ''} × ${num(i.quantity)}`;
+  lines.push(
+    "",
+    "【訂購內容】"
+  );
 
-    if(String(i.sweetness || '').trim()){
-      s += `｜甜度：${i.sweetness}`;
+  for (
+    const item of order.items
+  ) {
+    let text =
+      `${item.name} × ${item.quantity}`;
+
+    if (
+      String(
+        item.sweetness || ""
+      ).trim()
+    ) {
+      text +=
+        `｜甜度：${item.sweetness}`;
     }
 
-    if(String(i.ice || '').trim()){
-      s += `｜冰塊：${i.ice}`;
+    if (
+      String(
+        item.ice || ""
+      ).trim()
+    ) {
+      text +=
+        `｜冰塊：${item.ice}`;
     }
 
-    a.push(s);
+    if (
+      number(
+        item.price
+      ) > 0
+    ) {
+      text +=
+        `｜$${number(
+          item.price
+        )}`;
+    }
+
+    lines.push(text);
   }
 
-  const b1=num(order.bag1Count);
-  const b2=num(order.bag2Count);
-
-  if(b1 || b2){
-    a.push(
-      '',
-      '【購物袋】'
+  if (
+    number(
+      order.bag1Count
+    ) > 0 ||
+    number(
+      order.bag2Count
+    ) > 0
+  ) {
+    lines.push(
+      "",
+      "【購物袋】"
     );
 
-    if(b1){
-      a.push(`1 杯袋 × ${b1}`);
+    if (
+      number(
+        order.bag1Count
+      ) > 0
+    ) {
+      lines.push(
+        `1 杯袋 × ${number(
+          order.bag1Count
+        )}`
+      );
     }
 
-    if(b2){
-      a.push(`2～8 杯袋 × ${b2}`);
+    if (
+      number(
+        order.bag2Count
+      ) > 0
+    ) {
+      lines.push(
+        `2～8 杯袋 × ${number(
+          order.bag2Count
+        )}`
+      );
     }
   }
 
-  if(String(order.customer.note || '').trim()){
-    a.push(
-      '',
+  if (
+    String(
+      order.customer.note || ""
+    ).trim()
+  ) {
+    lines.push(
+      "",
       `備註：${order.customer.note}`
     );
   }
 
-  if(String(order.customer.invoiceNumber || '').trim()){
-    a.push(
+  if (
+    String(
+      order.customer.invoiceNumber || ""
+    ).trim()
+  ) {
+    lines.push(
       `統一編號：${order.customer.invoiceNumber}`
     );
   }
 
-  a.push(
-    '',
-    `💰 合計：$${order.total}`,
-    '',
-    '💵 付款方式：現金'
+  lines.push(
+    "",
+    `💰 訂單總額：$${number(
+      order.total
+    )}`,
+    "",
+    "💵 付款方式：現金"
   );
+
+  if (
+    order.lineUserId
+  ) {
+    lines.push(
+      "",
+      "🟢 LINE 已綁定",
+      `LINE User ID：${order.lineUserId}`
+    );
+  }
 
   await linePushText(
-    adminUserId,
-    a.join('\n')
+    LINE_ADMIN_USER_ID(),
+    lines.join("\n")
   );
 }
 
-async function getCustomerByLineUserId(lineUserId){
-  if(!lineUserId || !hasSupabase()){
-    return null;
-  }
 
-  const x =
-    await supabase(
-      `orders?select=customer_name,customer_phone,created_at&line_user_id=eq.${encodeURIComponent(lineUserId)}&order=created_at.desc&limit=1`
-    );
+/* =========================================================
+   訂單編號
+   ========================================================= */
 
-  const row =
-    Array.isArray(x)
-      ? x[0]
-      : null;
-
-  if(!row){
-    return null;
-  }
-
-  return {
-    name:
-      row.customer_name || '',
-    phone:
-      row.customer_phone || ''
-  };
-}
-
-function normalize(row){
-  return{
-    id:makeOrderId(row.order_number),
-    orderNumber:num(row.order_number),
-    createdAt:row.created_at,
-    status:row.order_status||'new',
-
-    customer:{
-      name:row.customer_name||'',
-      phone:row.customer_phone||'',
-      pickupDateTime:row.pickup_time||'',
-      invoiceNumber:row.invoice_number||'',
-      note:row.notes||''
-    },
-
-    items:
-      Array.isArray(row.items)
-        ? row.items
-        : [],
-
-    bag1Count:num(row.bag1_count),
-    bag2Count:num(row.bag2_count),
-    total:num(row.total_amount),
-
-    lineUserId:row.line_user_id||'',
-    lineDisplayName:row.line_display_name||''
-  };
-}
-
-async function getOrders(){
-  const x=
-    await supabase(
-      'orders?select=*&order=created_at.desc&limit=100'
-    );
-
-  return Array.isArray(x)?x:[];
-}
-
-async function getOrder(n){
-  const orderNumber=resolveOrderNumber(n);
-
-  if(!orderNumber){
-    return null;
-  }
-
-  const x=
-    await supabase(
-      `orders?select=*&order_number=eq.${encodeURIComponent(
+function makeOrderId(
+  orderNumber
+) {
+  const n =
+    Math.floor(
+      number(
         orderNumber
-      )}&limit=1`
-    );
-
-  return x?.[0]||null;
-}
-
-async function deleteOrder(n){
-  const orderNumber=resolveOrderNumber(n);
-
-  if(!orderNumber){
-    throw Error('訂單編號格式錯誤');
-  }
-
-  return supabase(
-    `orders?order_number=eq.${encodeURIComponent(
-      orderNumber
-    )}`,
-    {
-      method:'DELETE',
-      prefer:'return=representation'
-    }
-  );
-}
-
-async function statusOrder(n,status){
-  const orderNumber=resolveOrderNumber(n);
-
-  if(!orderNumber){
-    throw Error('訂單編號格式錯誤');
-  }
-
-  const allowed=[
-    'new',
-    'confirmed',
-    'preparing',
-    'ready',
-    'completed',
-    'cancelled'
-  ];
-
-  if(!allowed.includes(status)){
-    throw Error(
-      '訂單狀態不正確'
-    );
-  }
-
-  const x=
-    await supabase(
-      `orders?order_number=eq.${encodeURIComponent(
-        orderNumber
-      )}`,
-      {
-        method:'PATCH',
-        body:{
-          order_status:status
-        }
-      }
-    );
-
-  return x?.[0]||null;
-}
-
-function deleteLocal(n){
-  const orderNumber=resolveOrderNumber(n);
-  const a=readOrders();
-
-  const b=
-    a.filter(
-      x=>
-        num(
-          x.orderNumber??
-          x.order_number
-        )!==orderNumber
-    );
-
-  writeOrders(b);
-
-  return a.length-b.length;
-}
-
-function localAsRows(){
-  return readOrders().map(
-    o=>({
-      order_number:o.orderNumber,
-
-      customer_name:
-        o.customer?.name||'',
-
-      customer_phone:
-        o.customer?.phone||'',
-
-      items:
-        o.items||[],
-
-      total_amount:
-        o.total||0,
-
-      invoice_number:
-        o.customer?.invoiceNumber||null,
-
-      bag1_count:
-        num(o.bag1Count),
-
-      bag2_count:
-        num(o.bag2Count),
-
-      pickup_time:
-        o.customer?.pickupDateTime||null,
-
-      notes:
-        o.customer?.note||null,
-
-      order_status:
-        o.status||'new',
-
-      created_at:
-        o.createdAt,
-
-      line_user_id:
-        o.lineUserId||'',
-
-      line_display_name:
-        o.lineDisplayName||''
-    })
-  );
-}
-
-function safeFile(p){
-  let d;
-
-  try{
-    d=
-      decodeURIComponent(
-        p==='/'?
-          '/index.html':
-          p
-      );
-  }catch{
-    return null;
-  }
-
-  const root=
-    path.resolve(PUBLIC_DIR);
-
-  const file=
-    path.resolve(
-      path.join(
-        PUBLIC_DIR,
-        d
       )
     );
 
-  return(
-    file===root||
-    file.startsWith(
-      root+path.sep
+  if (
+    !n
+  ) {
+    return "";
+  }
+
+  const encoded =
+    n.toString(36)
+      .toUpperCase();
+
+  const suffix =
+    crypto
+      .createHash(
+        "sha256"
+      )
+      .update(
+        String(n)
+      )
+      .digest("hex")
+      .slice(
+        0,
+        6
+      )
+      .toUpperCase();
+
+  return (
+    `T${encoded}${suffix}`
+  );
+}
+
+function resolveOrderNumber(
+  value
+) {
+  const raw =
+    String(
+      value ?? ""
     )
-  )
-    ? file
-    : null;
+      .trim()
+      .toUpperCase();
+
+  if (
+    /^\d+$/.test(raw)
+  ) {
+    return Math.floor(
+      number(raw)
+    );
+  }
+
+  if (
+    !/^T[A-Z0-9]+$/.test(
+      raw
+    ) ||
+    raw.length < 8
+  ) {
+    return 0;
+  }
+
+  const encoded =
+    raw.slice(
+      1,
+      -6
+    );
+
+  const n =
+    parseInt(
+      encoded,
+      36
+    );
+
+  if (
+    !Number.isFinite(n) ||
+    n <= 0
+  ) {
+    return 0;
+  }
+
+  return (
+    makeOrderId(n) === raw
+      ? n
+      : 0
+  );
 }
 
-function adminHtml(rows,key){
 
-  const tr=
-    rows.map(r=>{
-
-      const n=
-        r.order_number??'';
-
-      const displayId=
-        makeOrderId(n)||String(n);
-
-      const created=
-        r.created_at
-          ? new Date(
-              r.created_at
-            ).toLocaleString(
-              'zh-TW',
-              {
-                hour12:false
-              }
-            )
-          : '';
-
-      const name=
-        r.customer_name||'';
-
-      const phone=
-        r.customer_phone||'';
-
-      const pickup=
-        r.pickup_time||'';
-
-      const total=
-        num(r.total_amount);
-
-      const status=
-        r.order_status||'new';
-
-      let items=
-        (
-          Array.isArray(r.items)
-            ? r.items
-            : []
-        )
-          .map(i=>{
-
-            let s=
-              `${esc(i.name||'')} × ${num(i.quantity)}`;
-
-            if(
-              String(
-                i.sweetness||''
-              ).trim()
-            ){
-              s+=
-                `｜甜度：${esc(
-                  i.sweetness
-                )}`;
-            }
-
-            if(
-              String(
-                i.ice||''
-              ).trim()
-            ){
-              s+=
-                `｜冰塊：${esc(
-                  i.ice
-                )}`;
-            }
-
-            return s;
-          })
-          .join('<br>');
-
-      const b1=num(r.bag1_count);
-      const b2=num(r.bag2_count);
-
-      const note=
-        String(
-          r.notes||''
-        ).trim();
-
-      const invoice=
-        String(
-          r.invoice_number||''
-        ).trim();
-
-      if(b1||b2){
-
-        items+=
-          '<br><br><strong>購物袋：</strong>';
-
-        if(b1){
-          items+=
-            `<br>1杯袋：${b1} 個`;
-        }
-
-        if(b2){
-          items+=
-            `<br>2～8杯袋：${b2} 個`;
-        }
-      }
-
-      if(note){
-        items+=
-          `<br><br><strong>備註：</strong>${esc(note)}`;
-      }
-
-      if(invoice){
-        items+=
-          `<br><strong>統一編號：</strong>${esc(invoice)}`;
-      }
-
-      return `
-<tr data-row="${esc(displayId)}">
-
-<td>
-<strong>${esc(displayId)}</strong>
-</td>
-
-<td>
-${esc(created)}
-</td>
-
-<td>
-${esc(name)}
-<br>
-${esc(phone)}
-<br><br>
-<strong>取餐時間：</strong>
-${esc(pickup)}
-</td>
-
-<td>
-${items||'—'}
-</td>
-
-<td>
-<strong>$${total}</strong>
-</td>
-
-<td>
-<span class="status">
-${esc(status)}
-</span>
-</td>
-
-<td>
-<button
-class="delete-btn"
-type="button"
-data-order-number="${esc(displayId)}"
->
-🗑️ 刪除
-</button>
-</td>
-
-</tr>
-`;
-    })
-    .join('');
-
-  return `
-<!doctype html>
-
-<html lang="zh-Hant">
-
-<head>
-
-<meta charset="utf-8">
-
-<meta
-name="viewport"
-content="width=device-width,initial-scale=1"
->
-
-<title>
-藥師的私房紅茶｜訂單管理
-</title>
-
-<style>
-
-*{
-box-sizing:border-box;
-}
-
-body{
-font-family:
--apple-system,
-BlinkMacSystemFont,
-"Noto Sans TC",
-sans-serif;
-
-margin:0;
-background:#f5f6f8;
-color:#2b211d;
-}
-
-main{
-max-width:1500px;
-margin:30px auto;
-padding:0 20px;
-}
-
-h1{
-color:#8f2f27;
-font-size:28px;
-margin-bottom:24px;
-}
-
-.info{
-background:#fff;
-border-radius:16px;
-padding:16px;
-margin-bottom:20px;
-box-shadow:
-0 2px 10px
-rgba(0,0,0,.05);
-}
-
-.table-wrap{
-width:100%;
-overflow-x:auto;
-background:#fff;
-border-radius:16px;
-box-shadow:
-0 2px 10px
-rgba(0,0,0,.05);
-}
-
-table{
-width:100%;
-min-width:1100px;
-border-collapse:collapse;
-}
-
-th,
-td{
-padding:16px;
-border-bottom:
-1px solid #eee;
-text-align:left;
-vertical-align:top;
-}
-
-th{
-background:#eee4d8;
-color:#5b3028;
-white-space:nowrap;
-}
-
-tr:hover td{
-background:#fffaf5;
-}
-
-.status{
-display:inline-block;
-padding:5px 10px;
-border-radius:999px;
-background:#eee4d8;
-}
-
-.delete-btn{
-border:0;
-border-radius:10px;
-padding:12px 16px;
-background:#8f2f27;
-color:#fff;
-font-size:16px;
-font-weight:700;
-cursor:pointer;
-white-space:nowrap;
-touch-action:manipulation;
--webkit-tap-highlight-color:transparent;
-}
-
-.delete-btn:active{
-transform:scale(.96);
-}
-
-.delete-btn:disabled{
-opacity:.55;
-cursor:wait;
-}
-
-.empty{
-padding:40px;
-text-align:center;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<main>
-
-<h1>
-藥師的私房紅茶｜訂單管理
-</h1>
-
-<div class="info">
-
-<strong>
-訂單數量：
-</strong>
-
-<span id="orderCount">
-${rows.length}
-</span>
-
-筆
-
-<br>
-
-<small>
-
-資料來源：
-
-${
-  hasSupabase()
-    ? 'Supabase'
-    : '本機備份'
-}
-
-</small>
-
-</div>
-
-<div class="table-wrap">
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>
-訂單
-</th>
-
-<th>
-建立時間
-</th>
-
-<th>
-客人
-</th>
-
-<th>
-訂購內容
-</th>
-
-<th>
-總額
-</th>
-
-<th>
-狀態
-</th>
-
-<th>
-操作
-</th>
-
-</tr>
-
-</thead>
-
-<tbody>
-
-${
-  tr||
-  `
-<tr>
-
-<td
-colspan="7"
-class="empty"
->
-
-目前沒有訂單
-
-</td>
-
-</tr>
-`
-}
-
-</tbody>
-
-</table>
-
-</div>
-
-</main>
-
-<script>
-
-(function(){
-
-const KEY=
-${JSON.stringify(key)};
-
-async function del(button){
-
-const n=
-button.dataset.orderNumber;
-
-if(!n){
-
-alert(
-'找不到訂單編號，無法刪除。'
-);
-
-return;
-}
-
-if(
-!window.confirm(
-'確定要刪除訂單 '+
-n+
-' 嗎？\\n\\n'+
-'刪除後會同步從 Supabase 移除，無法復原。'
-)
-){
-return;
-}
-
-button.disabled=true;
-
-button.textContent=
-'刪除中…';
-
-try{
-
-const r=
-await fetch(
-'/api/admin/orders/'+
-encodeURIComponent(n)+
-'?key='+
-encodeURIComponent(KEY),
-{
-method:'DELETE',
-headers:{
-Accept:
-'application/json'
-},
-cache:'no-store'
-}
-);
-
-const text=
-await r.text();
-
-let data={};
-
-try{
-data=
-text
-? JSON.parse(text)
-:{};
-}catch{}
-
-if(
-!r.ok||
-!data.ok
-){
-
-throw Error(
-data.message||
-(
-'刪除失敗（HTTP '+
-r.status+
-'）'
-)
-);
-}
-
-const row=
-button.closest('tr');
-
-if(row){
-row.remove();
-}
-
-const count=
-document.querySelectorAll(
-'tbody tr[data-row]'
-).length;
-
-const ce=
-document.getElementById(
-'orderCount'
-);
-
-if(ce){
-ce.textContent=count;
-}
-
-if(count===0){
-
-document.querySelector(
-'tbody'
-).innerHTML=
-'<tr><td colspan="7" class="empty">目前沒有訂單</td></tr>';
-
-}
-
-}catch(e){
-
-console.error(
-'刪除訂單錯誤：',
-e
-);
-
-alert(
-e.message||
-'刪除訂單失敗'
-);
-
-button.disabled=false;
-
-button.textContent=
-'🗑️ 刪除';
-
-}
-
-}
-
-document.addEventListener(
-'click',
-e=>{
-
-const b=
-e.target.closest(
-'.delete-btn'
-);
-
-if(b){
-
-del(b);
-
-}
-
-}
-);
-
-})();
-
-</script>
-
-</body>
-
-</html>
-`;
-}
-
-const MIME={
-'.html':'text/html; charset=utf-8',
-'.js':'application/javascript; charset=utf-8',
-'.css':'text/css; charset=utf-8',
-'.json':'application/json; charset=utf-8',
-'.png':'image/png',
-'.jpg':'image/jpeg',
-'.jpeg':'image/jpeg',
-'.gif':'image/gif',
-'.svg':'image/svg+xml',
-'.ico':'image/x-icon',
-'.webp':'image/webp'
-};
-
-const server=
-http.createServer(
-async(req,res)=>{
-
-const u=
-new URL(
-req.url,
-`http://${req.headers.host||'localhost'}`
-);
-
-try{
-
-if(
-req.method===
-'OPTIONS'
-){
-
-res.writeHead(
-204,
-{
-'Access-Control-Allow-Origin':'*',
-'Access-Control-Allow-Methods':
-'GET,POST,PUT,DELETE,OPTIONS',
-'Access-Control-Allow-Headers':
-'Content-Type'
-}
-);
-
-return res.end();
-
-}
-
-if(
-req.method==='GET'&&
-u.pathname===
-'/api/health'
-){
-
-return send(
-res,
-200,
-{
-ok:true,
-service:
-'Pharmacists Tea House',
-
-supabase:
-hasSupabase(),
-
-telegram:false,
-
-lineLogin:lineLoginConfigured(),
-
-lineMessaging:lineMessagingConfigured()
-}
-);
-}
-
-if(
-req.method==='GET'&&
-u.pathname==='/api/line/login'
-){
-
-if(!lineLoginConfigured()){
-
-return send(
-res,
-503,
-{
-ok:false,
-message:
-'LINE Login 尚未設定。請先設定 LINE_LOGIN_CHANNEL_ID、LINE_LOGIN_CHANNEL_SECRET、LINE_LOGIN_CALLBACK_URL。'
-}
-);
-
-}
-
-const state =
-crypto
-.randomBytes(32)
-.toString('base64url');
-
-const returnTo =
-safeReturnPath(
-u.searchParams.get('return')
-);
-
-res.setHeader(
-'Set-Cookie',
-[
-`line_oauth_state=${cookieValue(state)}; Max-Age=600; Path=/; HttpOnly; Secure; SameSite=Lax`,
-`line_oauth_return=${cookieValue(returnTo)}; Max-Age=600; Path=/; HttpOnly; Secure; SameSite=Lax`
-]
-);
-
-const params =
-new URLSearchParams();
-
-params.set(
-'response_type',
-'code'
-);
-
-params.set(
-'client_id',
-String(
-process.env.LINE_LOGIN_CHANNEL_ID
-).trim()
-);
-
-params.set(
-'redirect_uri',
-String(
-process.env.LINE_LOGIN_CALLBACK_URL
-).trim()
-);
-
-params.set(
-'state',
-state
-);
-
-params.set(
-'scope',
-'profile openid'
-);
-
-const loginUrl =
-'https://access.line.me/oauth2/v2.1/authorize?' +
-params.toString();
-
-res.writeHead(
-302,
-{
-Location:loginUrl
-}
-);
-
-return res.end();
-}
-
-if(
-req.method==='GET'&&
-u.pathname==='/api/line/callback'
-){
-
-if(!lineLoginConfigured()){
-
-return send(
-res,
-503,
-{
-ok:false,
-message:
-'LINE Login 尚未設定'
-}
-);
-
-}
-
-const cookies =
-parseCookies(req);
-
-const expectedState =
-String(
-cookies.line_oauth_state || ''
-);
-
-const state =
-String(
-u.searchParams.get('state') || ''
-);
-
-if(
-!expectedState ||
-!state ||
-expectedState !== state
-){
-
-clearLineSession(res);
-
-return send(
-res,
-400,
-{
-ok:false,
-message:
-'LINE 登入驗證失敗，請重新嘗試。'
-}
-);
-
-}
-
-if(
-u.searchParams.get('error')
-){
-
-return send(
-res,
-400,
-{
-ok:false,
-message:
-'LINE 登入被取消或失敗。'
-}
-);
-
-}
-
-const code =
-String(
-u.searchParams.get('code') || ''
-).trim();
-
-if(!code){
-
-return send(
-res,
-400,
-{
-ok:false,
-message:
-'LINE Login 沒有收到授權碼。'
-}
-);
-
-}
-
-try{
-
-const token =
-await lineLoginToken(code);
-
-const profile =
-await lineProfile(
-token.access_token
-);
-
-const userId =
-String(
-profile.userId || ''
-).trim();
-
-if(
-!/^U[0-9a-f]{32}$/i.test(userId)
-){
-
-throw Error(
-'LINE 回傳的 User ID 格式不正確'
-);
-
-}
-
-const returnTo =
-safeReturnPath(
-cookies.line_oauth_return || '/'
-);
-
-res.setHeader(
-'Set-Cookie',
-[
-`line_session=${cookieValue(signLineSession(userId))}; Max-Age=2592000; Path=/; HttpOnly; Secure; SameSite=Lax`,
-'line_oauth_state=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax',
-'line_oauth_return=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax'
-]
-);
-
-res.writeHead(
-302,
-{
-Location:
-returnTo
-}
-);
-
-return res.end();
-
-}catch(e){
-
-console.error(
-'LINE Login callback 失敗',
-e
-);
-
-return send(
-res,
-500,
-{
-ok:false,
-message:
-e.message ||
-'LINE 登入失敗'
-}
-);
-
-}
-
-}
-
-if(
-req.method==='GET'&&
-u.pathname==='/api/line/me'
-){
-
-const lineUserId =
-lineUserIdFromRequest(req);
-
-if(!lineUserId){
-
-return send(
-res,
-200,
-{
-ok:true,
-loggedIn:false
-}
-);
-
-}
-
-let profile = null;
-let customer = null;
-
-try{
-
-customer =
-await getCustomerByLineUserId(
-lineUserId
-);
-
-}catch(e){
-
-console.error(
-'讀取 LINE 客戶資料失敗',
-e
-);
-
-}
-
-return send(
-res,
-200,
-{
-ok:true,
-loggedIn:true,
-userId:lineUserId,
-displayName:
-profile?.displayName || '',
-hasCustomerProfile:
-Boolean(
-customer?.name ||
-customer?.phone
-),
-customer
-}
-);
-
-}
 /* =========================================================
-   建立訂單
+   訂單資料整理
    ========================================================= */
 
-if(
-  req.method==='POST' &&
-  u.pathname==='/api/orders'
-){
-
-  /*
-   * =======================================================
-   * LINE 必須先完成綁定才能下單
-   * =======================================================
-   *
-   * 不採信前端傳來的 lineUserId。
-   *
-   * 唯一可信來源：
-   * HttpOnly Cookie 裡面的 line_session
-   *
-   * 沒有 LINE Session：
-   * → 直接拒絕
-   * → 不建立 Supabase 訂單
-   * → 不發 LINE 新訂單通知
-   */
-
-  const lineUserId =
-    lineUserIdFromRequest(req);
-
-
-  if(!lineUserId){
-
-    return send(
-      res,
-      401,
-      {
-        ok:false,
-
-        code:
-          'LINE_BINDING_REQUIRED',
-
-        message:
-          '請先完成 LINE 綁定後才能下單。'
-      }
-    );
-
+function normalizeItems(
+  items
+) {
+  if (
+    !Array.isArray(
+      items
+    )
+  ) {
+    return [];
   }
 
-
-  /*
-   * 再次確認 LINE User ID 格式
-   */
-
-  if(
-    !/^U[0-9a-f]{32}$/i.test(
-      lineUserId
-    )
-  ){
-
-    clearLineSession(res);
-
-    return send(
-      res,
-      401,
-      {
-        ok:false,
-
-        code:
-          'INVALID_LINE_SESSION',
-
-        message:
-          'LINE 綁定資訊已失效，請重新綁定 LINE。'
-      }
-    );
-
-  }
-
-
-  /*
-   * 讀取客人送出的訂單資料
-   */
-
-  const b =
-    await body(req);
-
-
-  const c =
-    b.customer ||
-    {};
-
-
-  const items =
-    Array.isArray(b.items)
-      ? b.items
-      : [];
-
-
-  /*
-   * 客人姓名
-   */
-
-  const name =
-    String(
-      c.name ||
-      b.customer_name ||
-      ''
-    )
-      .trim()
-      .slice(
-        0,
-        50
-      );
-
-
-  /*
-   * 客人電話
-   */
-
-  const phone =
-    String(
-      c.phone ||
-      b.customer_phone ||
-      ''
-    )
-      .trim()
-      .slice(
-        0,
-        30
-      );
-
-
-  /*
-   * 取餐時間
-   */
-
-  const pickup =
-    String(
-      c.pickupDateTime ||
-      c.pickup_time ||
-      b.pickup_time ||
-      ''
-    )
-      .trim()
-      .slice(
-        0,
-        100
-      );
-
-
-  /*
-   * 統一編號
-   */
-
-  const invoice =
-    String(
-      b.invoiceNumber ??
-      b.invoice_number ??
-
-      c.invoiceNumber ??
-      c.invoice_number ??
-
-      ''
-    )
-      .trim()
-      .slice(
-        0,
-        30
-      );
-
-
-  /*
-   * 備註
-   */
-
-  const note =
-    String(
-      c.note ??
-      c.notes ??
-
-      b.notes ??
-
-      ''
-    )
-      .trim()
-      .slice(
-        0,
-        500
-      );
-
-
-  /*
-   * =======================================================
-   * 基本資料驗證
-   * =======================================================
-   */
-
-  if(
-    !name ||
-    !phone ||
-    !pickup ||
-    !items.length
-  ){
-
-    return send(
-      res,
-      400,
-      {
-        ok:false,
-
-        message:
-          '請填寫姓名、電話、取餐時間並至少選擇一項商品。'
-      }
-    );
-
-  }
-
-
-  /*
-   * =======================================================
-   * 商品資料清理
-   * =======================================================
-   *
-   * 不直接相信前端傳來的 quantity / price。
-   * 這裡至少將數字轉換成安全數值。
-   */
-
-  const cleanItems =
-    items
-      .map(i=>{
+  return items
+    .map(
+      item => {
 
         const quantity =
           Math.max(
             0,
             Math.floor(
-              num(
-                i.quantity
+              number(
+                item.quantity
               )
             )
           );
 
-
         const price =
           Math.max(
             0,
-            num(
-              i.price
+            number(
+              item.price
             )
           );
 
-
-        return{
-
+        return {
           name:
             String(
-              i.name ||
-              ''
+              item.name ||
+              ""
             )
               .trim()
               .slice(
                 0,
-                100
+                200
               ),
 
           quantity,
@@ -2073,8 +1216,8 @@ if(
 
           sweetness:
             String(
-              i.sweetness ||
-              ''
+              item.sweetness ||
+              ""
             )
               .trim()
               .slice(
@@ -2084,147 +1227,201 @@ if(
 
           ice:
             String(
-              i.ice ||
-              ''
+              item.ice ||
+              ""
             )
               .trim()
               .slice(
                 0,
                 50
               )
-
         };
+      }
+    )
+    .filter(
+      item =>
+        item.name &&
+        item.quantity > 0
+    );
+}
 
-      })
-      .filter(
-        i=>
-          i.name &&
-          i.quantity>0
+
+/* =========================================================
+   建立訂單
+   ========================================================= */
+
+async function createOrder(
+  data,
+  lineUserId
+) {
+  const customer =
+    data.customer ||
+    {};
+
+  const name =
+    String(
+      customer.name ||
+      data.customer_name ||
+      ""
+    )
+      .trim()
+      .slice(
+        0,
+        100
       );
 
+  const phone =
+    String(
+      customer.phone ||
+      data.customer_phone ||
+      ""
+    )
+      .trim()
+      .slice(
+        0,
+        50
+      );
 
-  if(
-    !cleanItems.length
-  ){
+  const pickupDateTime =
+    String(
+      customer.pickupDateTime ||
+      customer.pickup_time ||
+      data.pickupDateTime ||
+      data.pickup_time ||
+      ""
+    )
+      .trim()
+      .slice(
+        0,
+        100
+      );
 
-    return send(
-      res,
-      400,
-      {
-        ok:false,
+  const invoiceNumber =
+    String(
+      customer.invoiceNumber ||
+      customer.invoice_number ||
+      data.invoiceNumber ||
+      data.invoice_number ||
+      ""
+    )
+      .trim()
+      .slice(
+        0,
+        30
+      );
 
-        message:
-          '訂購內容無效，請重新選擇商品。'
-      }
+  const note =
+    String(
+      customer.note ||
+      customer.notes ||
+      data.note ||
+      data.notes ||
+      ""
+    )
+      .trim()
+      .slice(
+        0,
+        1000
+      );
+
+  const items =
+    normalizeItems(
+      data.items
     );
 
+  const bag1Count =
+    Math.max(
+      0,
+      Math.floor(
+        number(
+          data.bag1Count ??
+          data.bag_1_count
+        )
+      )
+    );
+
+  const bag2Count =
+    Math.max(
+      0,
+      Math.floor(
+        number(
+          data.bag2Count ??
+          data.bag_2_count
+        )
+      )
+    );
+
+  if (
+    !name
+  ) {
+    throw new Error(
+      "請填寫姓名"
+    );
   }
 
-
-  /*
-   * =======================================================
-   * 購物袋
-   * =======================================================
-   */
-
-  const bag1 =
-    Math.max(
-      0,
-      Math.floor(
-        num(
-          b.bag1Count ??
-          b.bag_1_count
-        )
-      )
+  if (
+    !phone
+  ) {
+    throw new Error(
+      "請填寫電話"
     );
+  }
 
-
-  const bag2 =
-    Math.max(
-      0,
-      Math.floor(
-        num(
-          b.bag2Count ??
-          b.bag_2_count
-        )
-      )
+  if (
+    !pickupDateTime
+  ) {
+    throw new Error(
+      "請選擇取餐時間"
     );
+  }
 
+  if (
+    !items.length
+  ) {
+    throw new Error(
+      "請至少選擇一項商品"
+    );
+  }
 
-  /*
-   * =======================================================
-   * 計算商品金額
-   * =======================================================
-   */
-
-  const itemTotal =
-    cleanItems.reduce(
+  const itemsTotal =
+    items.reduce(
       (
-        sum,
+        total,
         item
-      )=>{
-
-        return(
-          sum +
-          (
-            item.price *
-            item.quantity
-          )
-        );
-
-      },
+      ) =>
+        total +
+        (
+          item.price *
+          item.quantity
+        ),
       0
     );
 
-
-  /*
-   * 購物袋：
-   *
-   * bag1 = 1 杯袋
-   * bag2 = 2～8 杯袋
-   *
-   * 這裡沿用目前系統的計價方式。
-   */
-
-  const bagTotal =
-    bag1 +
-    (
-      bag2 *
-      2
-    );
-
-
   const total =
-    itemTotal +
-    bagTotal;
-
-
-  /*
-   * =======================================================
-   * 產生訂單編號
-   * =======================================================
-   */
+    itemsTotal +
+    bag1Count +
+    bag2Count * 2;
 
   const orderNumber =
     Date.now();
 
-
-  const orderId =
+  const id =
     makeOrderId(
       orderNumber
     );
 
+  const lineCustomer =
+    findLineCustomer(
+      lineUserId
+    );
 
-  /*
-   * =======================================================
-   * 建立完整訂單物件
-   * =======================================================
-   */
+  const lineDisplayName =
+    lineCustomer?.displayName ||
+    lineCustomer?.lineDisplayName ||
+    "";
 
   const order = {
-
-    id:
-      orderId,
+    id,
 
     orderNumber,
 
@@ -2233,1175 +1430,469 @@ if(
         .toISOString(),
 
     status:
-      'new',
-
-
-    /*
-     * LINE 綁定資訊
-     *
-     * 一律使用 Server 驗證後的
-     * lineUserId。
-     */
+      "new",
 
     lineUserId,
 
-    lineDisplayName:
-      '',
+    lineDisplayName,
 
-
-    customer:{
-
+    customer: {
       name,
 
       phone,
 
-      pickupDateTime:
-        pickup,
+      pickupDateTime,
 
-      invoiceNumber:
-        invoice,
+      invoiceNumber,
 
       note
-
     },
 
+    items,
 
-    items:
-      cleanItems,
+    bag1Count,
 
-
-    bag1Count:
-      bag1,
-
-    bag2Count:
-      bag2,
-
+    bag2Count,
 
     total
+  };
+
+  /* -------------------------------------------------------
+     Supabase
+     ------------------------------------------------------- */
+
+  if (
+    hasSupabase()
+  ) {
+    await supabase(
+      "orders",
+      {
+        method:
+          "POST",
+
+        body: {
+          order_number:
+            orderNumber,
+
+          line_user_id:
+            lineUserId,
+
+          line_display_name:
+            lineDisplayName ||
+            null,
+
+          customer_name:
+            name,
+
+          customer_phone:
+            phone,
+
+          items,
+
+          total_amount:
+            Math.round(
+              total
+            ),
+
+          invoice_number:
+            invoiceNumber ||
+            null,
+
+          bag1_count:
+            bag1Count,
+
+          bag2_count:
+            bag2Count,
+
+          pickup_time:
+            pickupDateTime,
+
+          notes:
+            note ||
+            null,
+
+          order_status:
+            "new"
+        }
+      }
+    );
+  }
+
+  /* -------------------------------------------------------
+     本機備份
+     ------------------------------------------------------- */
+
+  const orders =
+    readOrders();
+
+  orders.unshift(
+    order
+  );
+
+  writeOrders(
+    orders
+  );
+
+  /* -------------------------------------------------------
+     LINE 官方帳號新訂單通知
+     ------------------------------------------------------- */
+
+  try {
+    await notifyLineNewOrder(
+      order
+    );
+  } catch (
+    error
+  ) {
+    console.error(
+      "LINE 新訂單通知失敗：",
+      error
+    );
+  }
+
+  return order;
+}
+
+
+/* =========================================================
+   取得所有訂單
+   ========================================================= */
+
+async function getAllOrders() {
+
+  if (
+    hasSupabase()
+  ) {
+
+    const rows =
+      await supabase(
+        "orders?select=*&order=created_at.desc&limit=500"
+      );
+
+    return Array.isArray(
+      rows
+    )
+      ? rows
+      : [];
+  }
+
+  return readOrders();
+}
+
+
+/* =========================================================
+   取得單筆訂單
+   ========================================================= */
+
+async function getOrderByNumber(
+  value
+) {
+
+  const orderNumber =
+    resolveOrderNumber(
+      value
+    );
+
+  if (
+    !orderNumber
+  ) {
+    return null;
+  }
+
+  if (
+    hasSupabase()
+  ) {
+
+    const rows =
+      await supabase(
+        `orders?select=*&order_number=eq.${encodeURIComponent(
+          orderNumber
+        )}&limit=1`
+      );
+
+    return (
+      Array.isArray(
+        rows
+      ) &&
+      rows.length
+    )
+      ? rows[0]
+      : null;
+  }
+
+  const orders =
+    readOrders();
+
+  return (
+    orders.find(
+      order =>
+        number(
+          order.orderNumber
+        ) ===
+        orderNumber
+    ) ||
+    null
+  );
+}
+
+
+/* =========================================================
+   修改訂單狀態
+   ========================================================= */
+
+async function updateOrderStatus(
+  value,
+  status
+) {
+
+  const orderNumber =
+    resolveOrderNumber(
+      value
+    );
+
+  if (
+    !orderNumber
+  ) {
+    throw new Error(
+      "訂單編號錯誤"
+    );
+  }
+
+  const allowedStatuses = [
+    "new",
+    "confirmed",
+    "preparing",
+    "ready",
+    "completed",
+    "cancelled"
+  ];
+
+  if (
+    !allowedStatuses.includes(
+      status
+    )
+  ) {
+    throw new Error(
+      "訂單狀態錯誤"
+    );
+  }
+
+  if (
+    hasSupabase()
+  ) {
+
+    const rows =
+      await supabase(
+        `orders?order_number=eq.${encodeURIComponent(
+          orderNumber
+        )}`,
+        {
+          method:
+            "PATCH",
+
+          body: {
+            order_status:
+              status
+          }
+        }
+      );
+
+    return (
+      Array.isArray(
+        rows
+      )
+        ? rows[0]
+        : null
+    );
+  }
+
+  const orders =
+    readOrders();
+
+  const index =
+    orders.findIndex(
+      order =>
+        number(
+          order.orderNumber
+        ) ===
+        orderNumber
+    );
+
+  if (
+    index < 0
+  ) {
+    return null;
+  }
+
+  orders[index].status =
+    status;
+
+  writeOrders(
+    orders
+  );
+
+  return orders[index];
+}
+
+
+/* =========================================================
+   刪除訂單
+   ========================================================= */
+
+async function deleteOrder(
+  value
+) {
+
+  const orderNumber =
+    resolveOrderNumber(
+      value
+    );
+
+  if (
+    !orderNumber
+  ) {
+    throw new Error(
+      "訂單編號錯誤"
+    );
+  }
+
+  if (
+    hasSupabase()
+  ) {
+
+    return await supabase(
+      `orders?order_number=eq.${encodeURIComponent(
+        orderNumber
+      )}`,
+      {
+        method:
+          "DELETE",
+
+        prefer:
+          "return=representation"
+      }
+    );
+  }
+
+  const orders =
+    readOrders();
+
+  const remaining =
+    orders.filter(
+      order =>
+        number(
+          order.orderNumber
+        ) !==
+        orderNumber
+    );
+
+  writeOrders(
+    remaining
+  );
+
+  return [];
+}
+
+
+/* =========================================================
+   管理員驗證
+   ========================================================= */
+
+function isAdmin(
+  req,
+  url
+) {
+
+  const headerKey =
+    String(
+      req.headers[
+        "x-admin-key"
+      ] ||
+      ""
+    ).trim();
+
+  const queryKey =
+    String(
+      url.searchParams.get(
+        "key"
+      ) ||
+      ""
+    ).trim();
+
+  const key =
+    headerKey ||
+    queryKey;
+
+  return (
+    Boolean(
+      key
+    ) &&
+    key ===
+      ADMIN_KEY()
+  );
+}
+
+
+/* =========================================================
+   MIME
+   ========================================================= */
+
+function getMimeType(
+  filename
+) {
+
+  const ext =
+    path.extname(
+      filename
+    ).toLowerCase();
+
+  const types = {
+
+    ".html":
+      "text/html; charset=utf-8",
+
+    ".htm":
+      "text/html; charset=utf-8",
+
+    ".js":
+      "application/javascript; charset=utf-8",
+
+    ".css":
+      "text/css; charset=utf-8",
+
+    ".json":
+      "application/json; charset=utf-8",
+
+    ".png":
+      "image/png",
+
+    ".jpg":
+      "image/jpeg",
+
+    ".jpeg":
+      "image/jpeg",
+
+    ".gif":
+      "image/gif",
+
+    ".svg":
+      "image/svg+xml",
+
+    ".webp":
+      "image/webp",
+
+    ".ico":
+      "image/x-icon",
+
+    ".txt":
+      "text/plain; charset=utf-8"
 
   };
 
-
-  /*
-   * =======================================================
-   * 如果 Supabase 有同一個 LINE 客人的歷史資料，
-   * 可取得最近一次姓名／電話。
-   *
-   * 但本次客人送出的姓名與電話仍然以本次訂單為準。
-   * =======================================================
-   */
-
-  try{
-
-    const previousCustomer =
-      await getCustomerByLineUserId(
-        lineUserId
-      );
-
-
-    if(
-      previousCustomer
-    ){
-
-      order.lineDisplayName =
-        previousCustomer.lineDisplayName ||
-        '';
-
-    }
-
-  }catch(e){
-
-    /*
-     * 找不到舊資料不影響下單。
-     */
-
-    console.error(
-      '讀取 LINE 客戶資料失敗：',
-      e.message
-    );
-
-  }
-
-
-  /*
-   * =======================================================
-   * 寫入 Supabase
-   * =======================================================
-   *
-   * 注意：
-   *
-   * 這一步一定在 LINE 驗證成功之後。
-   */
-
-  let saved;
-
-
-  if(
-    hasSupabase()
-  ){
-
-    try{
-
-      saved =
-        await supabase(
-          'orders',
-          {
-            method:
-              'POST',
-
-            body:{
-
-              order_number:
-                orderNumber,
-
-
-              /*
-               * 最重要：
-               * 使用 Server 驗證後的 LINE User ID
-               */
-
-              line_user_id:
-                lineUserId,
-
-
-              line_display_name:
-                order.lineDisplayName ||
-                null,
-
-
-              customer_name:
-                name,
-
-
-              customer_phone:
-                phone,
-
-
-              items:
-                cleanItems,
-
-
-              total_amount:
-                Math.round(
-                  total
-                ),
-
-
-              invoice_number:
-                invoice ||
-                null,
-
-
-              shopping_bag:
-                Boolean(
-                  bag1 ||
-                  bag2
-                ),
-
-
-              bag1_count:
-                bag1,
-
-
-              bag2_count:
-                bag2,
-
-
-              pickup_time:
-                pickup ||
-                null,
-
-
-              notes:
-                note ||
-                null,
-
-
-              order_status:
-                'new'
-
-            }
-
-          }
-        );
-
-    }catch(e){
-
-      console.error(
-        'Supabase 寫入訂單失敗：',
-        e
-      );
-
-
-      return send(
-        res,
-        500,
-        {
-          ok:false,
-
-          code:
-            'SUPABASE_ORDER_FAILED',
-
-          message:
-            '訂單無法寫入資料庫，請稍後再試。'
-        }
-      );
-
-    }
-
-  }else{
-
-    /*
-     * 如果沒有 Supabase，
-     * 仍保留本機備份功能。
-     */
-
-    saved=null;
-
-  }
-
-
-  /*
-   * =======================================================
-   * 本機訂單備份
-   * =======================================================
-   */
-
-  try{
-
-    const localOrders =
-      readOrders();
-
-
-    localOrders.unshift(
-      order
-    );
-
-
-    writeOrders(
-      localOrders
-    );
-
-  }catch(e){
-
-    console.error(
-      '本機訂單備份失敗：',
-      e.message
-    );
-
-  }
-
-
-  /*
-   * =======================================================
-   * LINE 官方帳號新訂單通知
-   * =======================================================
-   *
-   * Telegram 已經完全移除。
-   *
-   * 這裡只通知：
-   *
-   * LINE_ADMIN_USER_ID
-   *
-   * 通知內容會包含：
-   *
-   * 訂單編號
-   * 客人姓名
-   * 客人電話
-   * 取餐時間
-   * LINE User ID
-   * 商品
-   * 甜度
-   * 冰塊
-   * 購物袋
-   * 備註
-   * 統一編號
-   * 總金額
-   */
-
-  try{
-
-    await notifyLine(
-      order
-    );
-
-  }catch(e){
-
-    /*
-     * LINE 通知失敗不取消已成功建立的訂單。
-     *
-     * 因為訂單本身已經寫入資料庫。
-     */
-
-    console.error(
-      'LINE 新訂單通知失敗：',
-      e.message
-    );
-
-  }
-
-
-  /*
-   * =======================================================
-   * 回傳下單成功
-   * =======================================================
-   */
-
-  return send(
-    res,
-    201,
-    {
-
-      ok:true,
-
-      orderId:
-        orderId,
-
-      orderNumber:
-        orderNumber,
-
-      total:
-        total,
-
-      supabase:
-        Boolean(
-          hasSupabase()
-        ),
-
-      supabaseOrderId:
-        Array.isArray(saved)
-          ? (
-              saved[0]?.id ||
-              null
-            )
-          : (
-              saved?.id ||
-              null
-            )
-
-    }
+  return (
+    types[ext] ||
+    "application/octet-stream"
   );
-
-}
-
-
-/* =========================================================
-   查詢單筆訂單
-   ========================================================= */
-
-if(
-  req.method==='GET' &&
-  /^\/api\/orders\/[^/]+$/.test(
-    u.pathname
-  )
-){
-
-  if(
-    !hasSupabase()
-  ){
-
-    return send(
-      res,
-      503,
-      {
-        ok:false,
-
-        message:
-          'Supabase 尚未設定。'
-      }
-    );
-
-  }
-
-
-  const n =
-    u.pathname
-      .split('/')
-      .pop();
-
-
-  const row =
-    await getOrder(
-      n
-    );
-
-
-  if(
-    !row
-  ){
-
-    return send(
-      res,
-      404,
-      {
-        ok:false,
-
-        message:
-          '找不到訂單。'
-      }
-    );
-
-  }
-
-
-  return send(
-    res,
-    200,
-    {
-      ok:true,
-
-      order:
-        normalize(
-          row
-        )
-    }
-  );
-
-}
-
-
-/* =========================================================
-   管理員刪除訂單
-   ========================================================= */
-
-if(
-  req.method==='DELETE' &&
-  /^\/api\/admin\/orders\/[^/]+$/.test(
-    u.pathname
-  )
-){
-
-  const key =
-    String(
-      u.searchParams.get(
-        'key'
-      ) ||
-      ''
-    );
-
-
-  if(
-    key !==
-    adminKey()
-  ){
-
-    return send(
-      res,
-      401,
-      {
-        ok:false,
-
-        message:
-          'Unauthorized'
-      }
-    );
-
-  }
-
-
-  const n =
-    u.pathname
-      .split('/')
-      .pop();
-
-
-  const orderNumber =
-    resolveOrderNumber(
-      n
-    );
-
-
-  if(
-    !orderNumber
-  ){
-
-    return send(
-      res,
-      400,
-      {
-        ok:false,
-
-        message:
-          '訂單編號格式錯誤。'
-      }
-    );
-
-  }
-
-
-  let deletedCount=0;
-
-
-  /*
-   * Supabase 刪除
-   */
-
-  if(
-    hasSupabase()
-  ){
-
-    try{
-
-      const deleted =
-        await deleteOrder(
-          n
-        );
-
-
-      deletedCount =
-        Array.isArray(deleted)
-          ? deleted.length
-          : 0;
-
-    }catch(e){
-
-      console.error(
-        'Supabase 刪除訂單失敗：',
-        e
-      );
-
-
-      return send(
-        res,
-        500,
-        {
-          ok:false,
-
-          message:
-            e.message ||
-            '刪除訂單失敗。'
-        }
-      );
-
-    }
-
-  }
-
-
-  /*
-   * 本機備份也刪除
-   */
-
-  const localDeleted =
-    deleteLocal(
-      n
-    );
-
-
-  return send(
-    res,
-    200,
-    {
-
-      ok:true,
-
-      orderId:
-        makeOrderId(
-          orderNumber
-        ),
-
-      orderNumber,
-
-      deletedFromSupabase:
-        deletedCount,
-
-      deletedFromLocalBackup:
-        localDeleted
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   修改訂單狀態
-   ========================================================= */
-
-if(
-  req.method==='PUT' &&
-  /^\/api\/orders\/[^/]+\/status$/.test(
-    u.pathname
-  )
-){
-
-  const n =
-    u.pathname
-      .split('/')[3];
-
-
-  const b =
-    await body(
-      req
-    );
-
-
-  const status =
-    String(
-      b.status ||
-      ''
-    )
-      .trim();
-
-
-  if(
-    !status
-  ){
-
-    return send(
-      res,
-      400,
-      {
-        ok:false,
-
-        message:
-          '缺少訂單狀態。'
-      }
-    );
-
-  }
-
-
-  try{
-
-    const row =
-      await statusOrder(
-        n,
-        status
-      );
-
-
-    if(
-      !row
-    ){
-
-      return send(
-        res,
-        404,
-        {
-          ok:false,
-
-          message:
-            '找不到訂單。'
-        }
-      );
-
-    }
-
-
-    return send(
-      res,
-      200,
-      {
-        ok:true,
-
-        order:
-          normalize(
-            row
-          )
-      }
-    );
-
-  }catch(e){
-
-    console.error(
-      '修改訂單狀態失敗：',
-      e
-    );
-
-
-    return send(
-      res,
-      500,
-      {
-        ok:false,
-
-        message:
-          e.message ||
-          '修改訂單狀態失敗。'
-      }
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   管理後台
-   ========================================================= */
-
-if(
-  req.method==='GET' &&
-  u.pathname==='/admin'
-){
-
-  const key =
-    u.searchParams.get(
-      'key'
-    ) ||
-    '';
-
-
-  if(
-    key !==
-    adminKey()
-  ){
-
-    return send(
-      res,
-      401,
-      '<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><title>Unauthorized</title><h1>Unauthorized</h1>',
-      'text/html; charset=utf-8'
-    );
-
-  }
-
-
-  let rows=[];
-
-
-  try{
-
-    if(
-      hasSupabase()
-    ){
-
-      rows =
-        await getOrders();
-
-    }else{
-
-      rows =
-        localAsRows();
-
-    }
-
-  }catch(e){
-
-    console.error(
-      '讀取訂單錯誤：',
-      e
-    );
-
-
-    rows =
-      localAsRows();
-
-  }
-
-
-  return send(
-    res,
-    200,
-    adminHtml(
-      rows,
-      key
-    ),
-    'text/html; charset=utf-8'
-  );
-
-}
-/* =========================================================
-   查詢單筆訂單
-   ========================================================= */
-
-if(
-  req.method==='GET' &&
-  /^\/api\/orders\/[^/]+$/.test(
-    u.pathname
-  )
-){
-
-  if(
-    !hasSupabase()
-  ){
-
-    return send(
-      res,
-      503,
-      {
-        ok:false,
-        message:
-          'Supabase 尚未設定。'
-      }
-    );
-
-  }
-
-
-  const n =
-    u.pathname
-      .split('/')
-      .pop();
-
-
-  const row =
-    await getOrder(
-      n
-    );
-
-
-  if(
-    !row
-  ){
-
-    return send(
-      res,
-      404,
-      {
-        ok:false,
-        message:
-          '找不到訂單。'
-      }
-    );
-
-  }
-
-
-  return send(
-    res,
-    200,
-    {
-      ok:true,
-      order:
-        normalize(
-          row
-        )
-    }
-  );
-
-}
-
-
-/* =========================================================
-   管理員刪除訂單
-   ========================================================= */
-
-if(
-  req.method==='DELETE' &&
-  /^\/api\/admin\/orders\/[^/]+$/.test(
-    u.pathname
-  )
-){
-
-  const key =
-    String(
-      u.searchParams.get(
-        'key'
-      ) ||
-      ''
-    );
-
-
-  if(
-    key !==
-    adminKey()
-  ){
-
-    return send(
-      res,
-      401,
-      {
-        ok:false,
-        message:
-          'Unauthorized'
-      }
-    );
-
-  }
-
-
-  const n =
-    u.pathname
-      .split('/')
-      .pop();
-
-
-  const orderNumber =
-    resolveOrderNumber(
-      n
-    );
-
-
-  if(
-    !orderNumber
-  ){
-
-    return send(
-      res,
-      400,
-      {
-        ok:false,
-        message:
-          '訂單編號格式錯誤。'
-      }
-    );
-
-  }
-
-
-  if(
-    !hasSupabase()
-  ){
-
-    return send(
-      res,
-      503,
-      {
-        ok:false,
-        message:
-          'Supabase 尚未設定。'
-      }
-    );
-
-  }
-
-
-  try{
-
-    const deleted =
-      await deleteOrder(
-        n
-      );
-
-
-    const local =
-      deleteLocal(
-        n
-      );
-
-
-    return send(
-      res,
-      200,
-      {
-        ok:true,
-
-        orderId:
-          makeOrderId(
-            orderNumber
-          ),
-
-        orderNumber,
-
-        deletedFromSupabase:
-          Array.isArray(deleted)
-            ? deleted.length
-            : 0,
-
-        deletedFromLocalBackup:
-          local
-      }
-    );
-
-  }catch(e){
-
-    console.error(
-      '刪除訂單錯誤',
-      e
-    );
-
-
-    return send(
-      res,
-      500,
-      {
-        ok:false,
-        message:
-          e.message ||
-          '刪除訂單失敗'
-      }
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   修改訂單狀態
-   ========================================================= */
-
-if(
-  req.method==='PUT' &&
-  /^\/api\/orders\/[^/]+\/status$/.test(
-    u.pathname
-  )
-){
-
-  const n =
-    u.pathname
-      .split('/')[3];
-
-
-  const b =
-    await body(
-      req
-    );
-
-
-  const status =
-    String(
-      b.status ||
-      ''
-    )
-      .trim();
-
-
-  if(
-    !status
-  ){
-
-    return send(
-      res,
-      400,
-      {
-        ok:false,
-        message:
-          '缺少訂單狀態。'
-      }
-    );
-
-  }
-
-
-  try{
-
-    const row =
-      await statusOrder(
-        n,
-        status
-      );
-
-
-    if(
-      !row
-    ){
-
-      return send(
-        res,
-        404,
-        {
-          ok:false,
-          message:
-            '找不到訂單。'
-        }
-      );
-
-    }
-
-
-    return send(
-      res,
-      200,
-      {
-        ok:true,
-        order:
-          normalize(
-            row
-          )
-      }
-    );
-
-  }catch(e){
-
-    console.error(
-      '修改訂單狀態失敗',
-      e
-    );
-
-
-    return send(
-      res,
-      500,
-      {
-        ok:false,
-        message:
-          e.message ||
-          '修改訂單狀態失敗。'
-      }
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   管理後台
-   ========================================================= */
-
-if(
-  req.method==='GET' &&
-  u.pathname==='/admin'
-){
-
-  const key =
-    u.searchParams.get(
-      'key'
-    ) ||
-    '';
-
-
-  if(
-    key !==
-    adminKey()
-  ){
-
-    return send(
-      res,
-      401,
-      '<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><title>Unauthorized</title><h1>Unauthorized</h1>',
-      'text/html; charset=utf-8'
-    );
-
-  }
-
-
-  let rows=[];
-
-
-  try{
-
-    if(
-      hasSupabase()
-    ){
-
-      rows =
-        await getOrders();
-
-    }else{
-
-      rows =
-        localAsRows();
-
-    }
-
-  }catch(e){
-
-    console.error(
-      '讀取訂單錯誤',
-      e
-    );
-
-
-    rows =
-      localAsRows();
-
-  }
-
-
-  return send(
-    res,
-    200,
-    adminHtml(
-      rows,
-      key
-    ),
-    'text/html; charset=utf-8'
-  );
-
 }
 
 
@@ -3409,127 +1900,1831 @@ if(
    靜態檔案
    ========================================================= */
 
-const file =
-  safeFile(
-    u.pathname
-  );
+function serveStatic(
+  req,
+  res,
+  url
+) {
 
-
-if(
-  !file
-){
-
-  return send(
-    res,
-    403,
-    {
-      ok:false,
-      message:
-        'Forbidden'
-    }
-  );
-
-}
-
-
-fs.stat(
-  file,
-  (
-    err,
-    st
-  )=>{
-
-    if(
-      err ||
-      !st.isFile()
-    ){
-
-      return send(
-        res,
-        404,
-        'Not Found',
-        'text/plain; charset=utf-8'
-      );
-
-    }
-
-
-    const ext =
-      path
-        .extname(
-          file
-        )
-        .toLowerCase();
-
-
-    res.writeHead(
-      200,
-      {
-
-        'Content-Type':
-          MIME[ext] ||
-          'application/octet-stream',
-
-        'Cache-Control':
-          ext === '.html'
-            ? 'no-store'
-            : 'public,max-age=3600'
-
-      }
+  let pathname =
+    decodeURIComponent(
+      url.pathname
     );
 
+  if (
+    pathname === "/"
+  ) {
+    pathname =
+      "/index.html";
+  }
 
-    fs.createReadStream(
-      file
-    )
-      .pipe(
-        res
+  const relative =
+    pathname
+      .replace(
+        /^\/+/,
+        ""
       );
 
+  const filePath =
+    path.resolve(
+      PUBLIC_DIR,
+      relative
+    );
+
+  const publicRoot =
+    path.resolve(
+      PUBLIC_DIR
+    );
+
+  if (
+    filePath !==
+      publicRoot &&
+    !filePath.startsWith(
+      publicRoot +
+      path.sep
+    )
+  ) {
+
+    return send(
+      res,
+      403,
+      {
+        ok: false,
+        message:
+          "Forbidden"
+      }
+    );
   }
-);
 
+  fs.stat(
+    filePath,
+    (
+      error,
+      stat
+    ) => {
 
+      if (
+        error ||
+        !stat.isFile()
+      ) {
+
+        return send(
+          res,
+          404,
+          {
+            ok: false,
+            message:
+              "找不到頁面"
+          }
+        );
+      }
+
+      res.writeHead(
+        200,
+        {
+          "Content-Type":
+            getMimeType(
+              filePath
+            ),
+
+          "Cache-Control":
+            "no-cache"
+        }
+      );
+
+      fs.createReadStream(
+        filePath
+      ).pipe(
+        res
+      );
+    }
+  );
+}
 /* =========================================================
-   全域錯誤處理
+   Server
    ========================================================= */
 
-}catch(e){
+const server =
+  http.createServer(
+    async (
+      req,
+      res
+    ) => {
 
-  console.error(
-    '伺服器錯誤',
-    e
-  );
+      try {
+
+        const u =
+          new URL(
+            req.url ||
+              "/",
+            `http://${req.headers.host || "localhost"}`
+          );
+
+        /* ---------------------------------------------------
+           CORS / OPTIONS
+           --------------------------------------------------- */
+
+        if (
+          req.method ===
+          "OPTIONS"
+        ) {
+
+          res.writeHead(
+            204,
+            {
+              "Access-Control-Allow-Origin":
+                "*",
+
+              "Access-Control-Allow-Methods":
+                "GET,POST,PUT,DELETE,OPTIONS",
+
+              "Access-Control-Allow-Headers":
+                "Content-Type, X-Admin-Key",
+
+              "Access-Control-Max-Age":
+                "86400"
+            }
+          );
+
+          return res.end();
+        }
 
 
-  return send(
-    res,
-    500,
-    {
-      ok:false,
+        /* ===================================================
+           Health
+           =================================================== */
 
-      message:
-        e.message ||
-        '伺服器發生錯誤'
+        if (
+          req.method === "GET" &&
+          u.pathname ===
+            "/api/health"
+        ) {
+
+          return send(
+            res,
+            200,
+            {
+              ok: true,
+
+              service:
+                "Pharmacists Tea House",
+
+              supabase:
+                hasSupabase(),
+
+              lineLogin:
+                lineLoginConfigured(),
+
+              lineMessaging:
+                lineMessagingConfigured(),
+
+              telegram:
+                false
+            }
+          );
+        }
+
+
+        /* ===================================================
+           LINE Login
+           =================================================== */
+
+        if (
+          req.method === "GET" &&
+          u.pathname ===
+            "/api/line/login"
+        ) {
+
+          if (
+            !lineLoginConfigured()
+          ) {
+
+            return send(
+              res,
+              503,
+              {
+                ok: false,
+
+                code:
+                  "LINE_LOGIN_NOT_CONFIGURED",
+
+                message:
+                  "LINE 綁定功能尚未完成設定，請聯絡店家。"
+              }
+            );
+          }
+
+          const returnPath =
+            safeReturnPath(
+              u.searchParams.get(
+                "return"
+              ) ||
+              "/"
+            );
+
+          const state =
+            crypto
+              .randomBytes(
+                32
+              )
+              .toString(
+                "base64url"
+              );
+
+          res.setHeader(
+            "Set-Cookie",
+            [
+              `line_oauth_state=${cookieValue(
+                state
+              )}; Max-Age=600; Path=/; HttpOnly; Secure; SameSite=Lax`,
+
+              `line_oauth_return=${cookieValue(
+                returnPath
+              )}; Max-Age=600; Path=/; HttpOnly; Secure; SameSite=Lax`
+            ]
+          );
+
+          const params =
+            new URLSearchParams();
+
+          params.set(
+            "response_type",
+            "code"
+          );
+
+          params.set(
+            "client_id",
+            LINE_LOGIN_CHANNEL_ID()
+          );
+
+          params.set(
+            "redirect_uri",
+            LINE_LOGIN_CALLBACK_URL()
+          );
+
+          params.set(
+            "state",
+            state
+          );
+
+          params.set(
+            "scope",
+            "profile openid"
+          );
+
+          const loginUrl =
+            "https://access.line.me/oauth2/v2.1/authorize?" +
+            params.toString();
+
+          return redirect(
+            res,
+            loginUrl
+          );
+        }
+
+
+        /* ===================================================
+           LINE Callback
+           =================================================== */
+
+        if (
+          req.method === "GET" &&
+          u.pathname ===
+            "/api/line/callback"
+        ) {
+
+          const cookies =
+            parseCookies(
+              req
+            );
+
+          const savedState =
+            String(
+              cookies.line_oauth_state ||
+                ""
+            );
+
+          const state =
+            String(
+              u.searchParams.get(
+                "state"
+              ) ||
+                ""
+            );
+
+          if (
+            !savedState ||
+            !state ||
+            savedState !== state
+          ) {
+
+            return send(
+              res,
+              400,
+              {
+                ok: false,
+
+                message:
+                  "LINE 綁定驗證失敗，請重新操作。"
+              }
+            );
+          }
+
+          const code =
+            String(
+              u.searchParams.get(
+                "code"
+              ) ||
+                ""
+            ).trim();
+
+          if (
+            !code
+          ) {
+
+            return send(
+              res,
+              400,
+              {
+                ok: false,
+
+                message:
+                  "LINE 沒有回傳授權碼。"
+              }
+            );
+          }
+
+          try {
+
+            const token =
+              await exchangeLineCode(
+                code
+              );
+
+            const profile =
+              await getLineProfile(
+                token.access_token
+              );
+
+            const lineUserId =
+              String(
+                profile.userId ||
+                  ""
+              ).trim();
+
+            if (
+              !lineUserId
+            ) {
+
+              throw new Error(
+                "LINE User ID 無效"
+              );
+            }
+
+            saveLineCustomer(
+              {
+                lineUserId,
+
+                displayName:
+                  String(
+                    profile.displayName ||
+                      ""
+                  ),
+
+                pictureUrl:
+                  String(
+                    profile.pictureUrl ||
+                      ""
+                  ),
+
+                statusMessage:
+                  String(
+                    profile.statusMessage ||
+                      ""
+                  ),
+
+                updatedAt:
+                  new Date()
+                    .toISOString()
+              }
+            );
+
+            setLineSession(
+              res,
+              lineUserId
+            );
+
+            res.setHeader(
+              "Set-Cookie",
+              [
+                "line_oauth_state=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax",
+
+                "line_oauth_return=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax"
+              ]
+            );
+
+            const returnPath =
+              safeReturnPath(
+                cookies.line_oauth_return ||
+                  "/"
+              );
+
+            return redirect(
+              res,
+              returnPath
+            );
+
+          } catch (
+            error
+          ) {
+
+            console.error(
+              "LINE Callback Error:",
+              error
+            );
+
+            return send(
+              res,
+              500,
+              {
+                ok: false,
+
+                message:
+                  "LINE 綁定失敗，請重新操作。"
+              }
+            );
+          }
+        }
+
+
+        /* ===================================================
+           LINE 狀態
+           =================================================== */
+
+        if (
+          req.method === "GET" &&
+          u.pathname ===
+            "/api/line/status"
+        ) {
+
+          const lineUserId =
+            getLineUserId(
+              req
+            );
+
+          const customer =
+            lineUserId
+              ? findLineCustomer(
+                  lineUserId
+                )
+              : null;
+
+          return send(
+            res,
+            200,
+            {
+              ok: true,
+
+              bound:
+                Boolean(
+                  lineUserId
+                ),
+
+              lineUserId:
+                lineUserId ||
+                null,
+
+              displayName:
+                customer?.displayName ||
+                "",
+
+              name:
+                customer?.name ||
+                "",
+
+              phone:
+                customer?.phone ||
+                ""
+            }
+          );
+        }
+
+
+        /* ===================================================
+           LINE 我的資料
+           =================================================== */
+
+        if (
+          req.method === "GET" &&
+          u.pathname ===
+            "/api/line/me"
+        ) {
+
+          const lineUserId =
+            getLineUserId(
+              req
+            );
+
+          if (
+            !lineUserId
+          ) {
+
+            return send(
+              res,
+              401,
+              {
+                ok: false,
+
+                code:
+                  "LINE_BINDING_REQUIRED",
+
+                message:
+                  "請先綁定 LINE。"
+              }
+            );
+          }
+
+          const customer =
+            findLineCustomer(
+              lineUserId
+            );
+
+          return send(
+            res,
+            200,
+            {
+              ok: true,
+
+              lineUserId,
+
+              customer:
+                customer ||
+                {
+                  lineUserId
+                }
+            }
+          );
+        }
+
+
+        /* ===================================================
+           LINE 登出
+           =================================================== */
+
+        if (
+          req.method === "POST" &&
+          u.pathname ===
+            "/api/line/logout"
+        ) {
+
+          clearLineSession(
+            res
+          );
+
+          return send(
+            res,
+            200,
+            {
+              ok: true
+            }
+          );
+        }
+
+
+        /* ===================================================
+           儲存 LINE 客人資料
+           =================================================== */
+
+        if (
+          req.method === "POST" &&
+          u.pathname ===
+            "/api/line/customer"
+        ) {
+
+          const lineUserId =
+            getLineUserId(
+              req
+            );
+
+          if (
+            !lineUserId
+          ) {
+
+            return send(
+              res,
+              401,
+              {
+                ok: false,
+
+                code:
+                  "LINE_BINDING_REQUIRED",
+
+                message:
+                  "請先綁定 LINE。"
+              }
+            );
+          }
+
+          let body;
+
+          try {
+
+            body =
+              await parseBody(
+                req
+              );
+
+          } catch {
+
+            return send(
+              res,
+              400,
+              {
+                ok: false,
+
+                message:
+                  "資料格式錯誤。"
+              }
+            );
+          }
+
+          const existing =
+            findLineCustomer(
+              lineUserId
+            ) ||
+            {};
+
+          const customer = {
+
+            ...existing,
+
+            lineUserId,
+
+            name:
+              String(
+                body.name ||
+                  existing.name ||
+                  ""
+              )
+                .trim()
+                .slice(
+                  0,
+                  100
+                ),
+
+            phone:
+              String(
+                body.phone ||
+                  existing.phone ||
+                  ""
+              )
+                .trim()
+                .slice(
+                  0,
+                  50
+                ),
+
+            updatedAt:
+              new Date()
+                .toISOString()
+          };
+
+          saveLineCustomer(
+            customer
+          );
+
+          return send(
+            res,
+            200,
+            {
+              ok: true,
+
+              customer
+            }
+          );
+        }
+
+
+        /* ===================================================
+           建立訂單
+           =================================================== */
+
+        if (
+          req.method === "POST" &&
+          u.pathname ===
+            "/api/orders"
+        ) {
+
+          /*
+           * 非常重要：
+           *
+           * 不接受前端自己傳來的 lineUserId
+           * 作為綁定證明。
+           *
+           * 必須由 HttpOnly LINE Session
+           * 驗證客人真的已經綁定 LINE。
+           */
+
+          const lineUserId =
+            getLineUserId(
+              req
+            );
+
+          if (
+            !lineUserId
+          ) {
+
+            return send(
+              res,
+              401,
+              {
+                ok: false,
+
+                code:
+                  "LINE_BINDING_REQUIRED",
+
+                message:
+                  "請先綁定 LINE，才能完成下單。"
+              }
+            );
+          }
+
+          let body;
+
+          try {
+
+            body =
+              await parseBody(
+                req
+              );
+
+          } catch {
+
+            return send(
+              res,
+              400,
+              {
+                ok: false,
+
+                message:
+                  "訂單資料格式錯誤。"
+              }
+            );
+          }
+
+          try {
+
+            const order =
+              await createOrder(
+                body,
+                lineUserId
+              );
+
+            return send(
+              res,
+              201,
+              {
+                ok: true,
+
+                orderId:
+                  order.id,
+
+                orderNumber:
+                  order.orderNumber,
+
+                total:
+                  order.total,
+
+                lineBound:
+                  true
+              }
+            );
+
+          } catch (
+            error
+          ) {
+
+            console.error(
+              "建立訂單失敗:",
+              error
+            );
+
+            return send(
+              res,
+              500,
+              {
+                ok: false,
+
+                code:
+                  "ORDER_CREATE_FAILED",
+
+                message:
+                  error.message ||
+                  "訂單建立失敗，請稍後再試。"
+              }
+            );
+          }
+        }
+
+
+        /* ===================================================
+           Admin：訂單列表
+           =================================================== */
+
+        if (
+          req.method === "GET" &&
+          u.pathname ===
+            "/api/admin/orders"
+        ) {
+
+          if (
+            !isAdmin(
+              req,
+              u
+            )
+          ) {
+
+            return send(
+              res,
+              401,
+              {
+                ok: false,
+
+                message:
+                  "未授權"
+              }
+            );
+          }
+
+          const orders =
+            await getAllOrders();
+
+          return send(
+            res,
+            200,
+            {
+              ok: true,
+
+              orders
+            }
+          );
+        }
+
+
+        /* ===================================================
+           Admin：單筆訂單
+           =================================================== */
+
+        if (
+          req.method === "GET" &&
+          u.pathname.startsWith(
+            "/api/admin/orders/"
+          )
+        ) {
+
+          if (
+            !isAdmin(
+              req,
+              u
+            )
+          ) {
+
+            return send(
+              res,
+              401,
+              {
+                ok: false,
+
+                message:
+                  "未授權"
+              }
+            );
+          }
+
+          const value =
+            decodeURIComponent(
+              u.pathname.slice(
+                "/api/admin/orders/"
+                  .length
+              )
+            );
+
+          const order =
+            await getOrderByNumber(
+              value
+            );
+
+          if (
+            !order
+          ) {
+
+            return send(
+              res,
+              404,
+              {
+                ok: false,
+
+                message:
+                  "找不到訂單"
+              }
+            );
+          }
+
+          return send(
+            res,
+            200,
+            {
+              ok: true,
+
+              order
+            }
+          );
+        }
+
+
+        /* ===================================================
+           Admin：修改訂單狀態
+           =================================================== */
+
+        if (
+          req.method === "PUT" &&
+          u.pathname.startsWith(
+            "/api/admin/orders/"
+          ) &&
+          u.pathname.endsWith(
+            "/status"
+          )
+        ) {
+
+          if (
+            !isAdmin(
+              req,
+              u
+            )
+          ) {
+
+            return send(
+              res,
+              401,
+              {
+                ok: false,
+
+                message:
+                  "未授權"
+              }
+            );
+          }
+
+          const prefix =
+            "/api/admin/orders/";
+
+          const suffix =
+            "/status";
+
+          const value =
+            decodeURIComponent(
+              u.pathname.slice(
+                prefix.length,
+                -suffix.length
+              )
+            );
+
+          let body;
+
+          try {
+
+            body =
+              await parseBody(
+                req
+              );
+
+          } catch {
+
+            return send(
+              res,
+              400,
+              {
+                ok: false,
+
+                message:
+                  "資料格式錯誤"
+              }
+            );
+          }
+
+          try {
+
+            const order =
+              await updateOrderStatus(
+                value,
+                String(
+                  body.status ||
+                    ""
+                )
+              );
+
+            if (
+              !order
+            ) {
+
+              return send(
+                res,
+                404,
+                {
+                  ok: false,
+
+                  message:
+                    "找不到訂單"
+                }
+              );
+            }
+
+            return send(
+              res,
+              200,
+              {
+                ok: true,
+
+                order
+              }
+            );
+
+          } catch (
+            error
+          ) {
+
+            return send(
+              res,
+              400,
+              {
+                ok: false,
+
+                message:
+                  error.message
+              }
+            );
+          }
+        }
+
+
+        /* ===================================================
+           Admin：刪除訂單
+           =================================================== */
+
+        if (
+          req.method === "DELETE" &&
+          u.pathname.startsWith(
+            "/api/admin/orders/"
+          )
+        ) {
+
+          if (
+            !isAdmin(
+              req,
+              u
+            )
+          ) {
+
+            return send(
+              res,
+              401,
+              {
+                ok: false,
+
+                message:
+                  "未授權"
+              }
+            );
+          }
+
+          const value =
+            decodeURIComponent(
+              u.pathname.slice(
+                "/api/admin/orders/"
+                  .length
+              )
+            );
+
+          try {
+
+            await deleteOrder(
+              value
+            );
+
+            return send(
+              res,
+              200,
+              {
+                ok: true
+              }
+            );
+
+          } catch (
+            error
+          ) {
+
+            return send(
+              res,
+              400,
+              {
+                ok: false,
+
+                message:
+                  error.message
+              }
+            );
+          }
+        }
+
+
+        /* ===================================================
+           Admin：管理頁
+           =================================================== */
+
+        if (
+          req.method === "GET" &&
+          u.pathname ===
+            "/admin"
+        ) {
+
+          const key =
+            u.searchParams.get(
+              "key"
+            );
+
+          if (
+            key &&
+            key ===
+              ADMIN_KEY()
+          ) {
+
+            return send(
+              res,
+              200,
+              adminHtml(),
+              "text/html; charset=utf-8"
+            );
+          }
+
+          return send(
+            res,
+            401,
+            {
+              ok: false,
+
+              message:
+                "請使用管理員金鑰進入後台。"
+            }
+          );
+        }
+
+
+        /* ===================================================
+           靜態檔案
+           =================================================== */
+
+        if (
+          req.method === "GET"
+        ) {
+
+          return serveStatic(
+            req,
+            res,
+            u
+          );
+        }
+
+
+        /* ===================================================
+           Not Found
+           =================================================== */
+
+        return send(
+          res,
+          404,
+          {
+            ok: false,
+
+            message:
+              "找不到 API"
+          }
+        );
+
+      } catch (
+        error
+      ) {
+
+        console.error(
+          "Server Error:",
+          error
+        );
+
+        return send(
+          res,
+          500,
+          {
+            ok: false,
+
+            message:
+              "伺服器發生錯誤，請稍後再試。"
+          }
+        );
+      }
     }
   );
 
+
+/* =========================================================
+   Admin HTML
+   ========================================================= */
+
+function adminHtml() {
+
+  return `<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1">
+
+<title>訂單管理</title>
+
+<style>
+
+* {
+  box-sizing: border-box;
 }
 
+body {
+  margin: 0;
+  padding: 20px;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  background: #f5f5f5;
+  color: #222;
+}
+
+h1 {
+  margin-top: 0;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 14px;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: .85;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+th,
+td {
+  border-bottom: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: #eee;
+}
+
+.status {
+  font-weight: 700;
+}
+
+.controls {
+  margin-bottom: 15px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+@media (
+  max-width: 700px
+) {
+
+  body {
+    padding: 10px;
+  }
+
+  table {
+    font-size: 13px;
+  }
+
+  th,
+  td {
+    padding: 7px;
+  }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>訂單管理</h1>
+
+<div class="controls">
+  <button
+    onclick="loadOrders()">
+    重新整理
+  </button>
+</div>
+
+<div id="app">
+  載入中...
+</div>
+
+<script>
+
+const params =
+  new URLSearchParams(
+    location.search
+  );
+
+const adminKey =
+  params.get("key") || "";
+
+async function loadOrders() {
+
+  const app =
+    document.getElementById(
+      "app"
+    );
+
+  app.innerHTML =
+    "載入中...";
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/admin/orders?key=" +
+        encodeURIComponent(
+          adminKey
+        )
+      );
+
+    const data =
+      await response.json();
+
+    if (
+      !response.ok
+    ) {
+
+      throw new Error(
+        data.message ||
+        "載入失敗"
+      );
+    }
+
+    const orders =
+      Array.isArray(
+        data.orders
+      )
+        ? data.orders
+        : [];
+
+    if (
+      !orders.length
+    ) {
+
+      app.innerHTML =
+        '<div class="card">目前沒有訂單。</div>';
+
+      return;
+    }
+
+    app.innerHTML = \`
+      <div class="card">
+        <strong>
+          共 \${orders.length} 筆訂單
+        </strong>
+      </div>
+
+      <div style="overflow:auto">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>訂單</th>
+            <th>客人</th>
+            <th>取餐時間</th>
+            <th>商品</th>
+            <th>金額</th>
+            <th>狀態</th>
+            <th>操作</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          \${orders.map(
+            order => {
+
+              const orderNumber =
+                order.order_number ||
+                order.orderNumber ||
+                "";
+
+              const orderId =
+                order.id ||
+                "";
+
+              const name =
+                order.customer_name ||
+                order.customer?.name ||
+                "";
+
+              const phone =
+                order.customer_phone ||
+                order.customer?.phone ||
+                "";
+
+              const pickup =
+                order.pickup_time ||
+                order.customer?.pickupDateTime ||
+                "";
+
+              const total =
+                order.total_amount ??
+                order.total ??
+                0;
+
+              const status =
+                order.order_status ||
+                order.status ||
+                "new";
+
+              const items =
+                Array.isArray(
+                  order.items
+                )
+                  ? order.items
+                  : [];
+
+              return \`
+                <tr>
+
+                  <td>
+                    <strong>
+                      \${escapeHtml(
+                        orderId ||
+                        orderNumber
+                      )}
+                    </strong>
+                    <br>
+                    \${escapeHtml(
+                      String(
+                        order.created_at ||
+                        order.createdAt ||
+                        ""
+                      )
+                    )}
+                  </td>
+
+                  <td>
+                    \${escapeHtml(
+                      name
+                    )}
+                    <br>
+                    \${escapeHtml(
+                      phone
+                    )}
+                  </td>
+
+                  <td>
+                    \${escapeHtml(
+                      pickup
+                    )}
+                  </td>
+
+                  <td>
+                    \${items.map(
+                      item =>
+                        escapeHtml(
+                          item.name ||
+                          ""
+                        ) +
+                        " × " +
+                        Number(
+                          item.quantity ||
+                          0
+                        )
+                    ).join("<br>")}
+                  </td>
+
+                  <td>
+                    $ \${Number(
+                      total || 0
+                    )}
+                  </td>
+
+                  <td class="status">
+                    \${escapeHtml(
+                      status
+                    )}
+                  </td>
+
+                  <td>
+
+                    <select
+                      onchange="
+                        updateStatus(
+                          '\${encodeURIComponent(
+                            orderNumber ||
+                            orderId
+                          )}',
+                          this.value
+                        )
+                      ">
+
+                      \${[
+                        "new",
+                        "confirmed",
+                        "preparing",
+                        "ready",
+                        "completed",
+                        "cancelled"
+                      ].map(
+                        value =>
+                          \`
+                          <option
+                            value="\${value}"
+                            \${value === status
+                              ? "selected"
+                              : ""}>
+                            \${value}
+                          </option>
+                          \`
+                      ).join("")}
+
+                    </select>
+
+                    <br><br>
+
+                    <button
+                      onclick="
+                        deleteOrder(
+                          '\${encodeURIComponent(
+                            orderNumber ||
+                            orderId
+                          )}'
+                        )
+                      ">
+                      刪除
+                    </button>
+
+                  </td>
+
+                </tr>
+              \`;
+            }
+          ).join("")}
+
+        </tbody>
+
+      </table>
+
+      </div>
+    \`;
+
+  } catch (
+    error
+  ) {
+
+    app.innerHTML =
+      \`
+      <div class="card">
+        載入失敗：
+        \${escapeHtml(
+          error.message
+        )}
+      </div>
+      \`;
+
+  }
+
+}
+
+async function updateStatus(
+  orderNumber,
+  status
+) {
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/admin/orders/" +
+        orderNumber +
+        "/status?key=" +
+        encodeURIComponent(
+          adminKey
+        ),
+        {
+          method:
+            "PUT",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              status
+            })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if (
+      !response.ok
+    ) {
+
+      throw new Error(
+        data.message ||
+        "修改失敗"
+      );
+    }
+
+    await loadOrders();
+
+  } catch (
+    error
+  ) {
+
+    alert(
+      error.message
+    );
+
+  }
+
+}
+
+async function deleteOrder(
+  orderNumber
+) {
+
+  if (
+    !confirm(
+      "確定要刪除這筆訂單嗎？"
+    )
+  ) {
+
+    return;
+
+  }
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/admin/orders/" +
+        orderNumber +
+        "?key=" +
+        encodeURIComponent(
+          adminKey
+        ),
+        {
+          method:
+            "DELETE"
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if (
+      !response.ok
+    ) {
+
+      throw new Error(
+        data.message ||
+        "刪除失敗"
+      );
+    }
+
+    await loadOrders();
+
+  } catch (
+    error
+  ) {
+
+    alert(
+      error.message
+    );
+
+  }
+
+}
+
+function escapeHtml(
+  value
+) {
+
+  return String(
+    value ?? ""
+  ).replace(
+    /[&<>"']/g,
+    char => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[char])
+  );
+
+}
+
+loadOrders();
+
+</script>
+
+</body>
+</html>`;
 }
 
 
 /* =========================================================
-   啟動 Server
+   啟動
    ========================================================= */
-
-);
 
 server.listen(
   PORT,
-  ()=>{
+  () => {
+
+    console.log(
+      "======================================"
+    );
+
+    console.log(
+      "🍵 Pharmacists Tea House"
+    );
+
     console.log(
       `Server running on port ${PORT}`
     );
+
+    console.log(
+      `http://localhost:${PORT}`
+    );
+
+    console.log(
+      "======================================"
+    );
+
+    console.log(
+      "Supabase:",
+      hasSupabase()
+        ? "ON"
+        : "OFF"
+    );
+
+    console.log(
+      "LINE Login:",
+      lineLoginConfigured()
+        ? "ON"
+        : "OFF"
+    );
+
+    console.log(
+      "LINE Messaging:",
+      lineMessagingConfigured()
+        ? "ON"
+        : "OFF"
+    );
+
+    console.log(
+      "Telegram:",
+      "OFF"
+    );
+
   }
 );
