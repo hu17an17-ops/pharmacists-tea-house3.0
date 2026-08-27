@@ -1,71 +1,213 @@
-const menu = [
+/* =========================================================
+   藥師的私房紅茶
+   前台 app.js
+   ========================================================= */
+
+
+/* =========================================================
+   商品資料
+   ========================================================= */
+
+const products = [
+
   {
-    cat: "紅茶系列",
-    en: "Black Tea",
-    items: [
-      ["老樹麥香", "古早味傳統紅茶", 30],
-      ["菁玉紅茶", "英式下午茶", 45],
-      ["蜜香紅茶", "茶葉回甘帶有熟蜜的香氣", 45],
-      ["觀音紅茶", "帶有微微自然風味的紅茶", 45],
-      ["紫霞仙子紅茶", "阿薩姆基底，獨特果香，醇厚回甘", 50],
-      ["藥師皇茶", "獨特的山林木質香氣", 55],
-      ["台茶十八號（紅玉）", "茶香獨特，口感濃郁強烈", 75]
-    ]
+    id: 1,
+    category: "紅茶系列",
+    name: "老樹麥香",
+    subtitle: "古早味傳統紅茶",
+    price: 30
   },
 
   {
-    cat: "鮮奶茶系列",
-    en: "Milk Tea",
-    items: [
-      ["招牌鮮奶茶", "特製奶茶茶湯，類似麥香奶茶", 50],
-      ["菁玉鮮奶茶", "茶味較明顯的鮮奶茶", 50],
-      ["蜜香鮮奶茶", "茶葉回甘帶有熟蜜的香氣", 50],
-      ["觀音鮮奶茶", "讓人耳目一新的特別風味", 55],
-      ["阿薩姆鮮奶茶", "阿薩姆奶品種獨特的甘醇芳香", 55]
-    ]
+    id: 2,
+    category: "紅茶系列",
+    name: "菁玉紅茶",
+    subtitle: "英式下午茶",
+    price: 45
+  },
+
+  {
+    id: 3,
+    category: "紅茶系列",
+    name: "蜜香紅茶",
+    subtitle: "茶葉回甘帶有熟蜜的香氣",
+    price: 45
+  },
+
+  {
+    id: 4,
+    category: "紅茶系列",
+    name: "觀音紅茶",
+    subtitle: "帶有微微自然風味的紅茶",
+    price: 45
+  },
+
+  {
+    id: 5,
+    category: "紅茶系列",
+    name: "紫霞仙子紅茶",
+    subtitle: "阿薩姆基底，獨特果香，醇厚回甘",
+    price: 50
+  },
+
+  {
+    id: 6,
+    category: "紅茶系列",
+    name: "藥師皇茶",
+    subtitle: "獨特的山林木質香氣",
+    price: 55
+  },
+
+  {
+    id: 7,
+    category: "紅茶系列",
+    name: "台茶十八號（紅玉）",
+    subtitle: "茶香獨特，口感濃郁強烈",
+    price: 75
+  },
+
+  {
+    id: 8,
+    category: "鮮奶茶系列",
+    name: "招牌鮮奶茶",
+    subtitle: "特製奶茶茶湯，類似麥香奶茶",
+    price: 50
+  },
+
+  {
+    id: 9,
+    category: "鮮奶茶系列",
+    name: "菁玉鮮奶茶",
+    subtitle: "茶味較明顯的鮮奶茶",
+    price: 50
+  },
+
+  {
+    id: 10,
+    category: "鮮奶茶系列",
+    name: "蜜香鮮奶茶",
+    subtitle: "茶葉回甘帶有熟蜜的香氣",
+    price: 50
+  },
+
+  {
+    id: 11,
+    category: "鮮奶茶系列",
+    name: "觀音鮮奶茶",
+    subtitle: "讓人耳目一新的特別風味",
+    price: 55
+  },
+
+  {
+    id: 12,
+    category: "鮮奶茶系列",
+    name: "阿薩姆鮮奶茶",
+    subtitle: "阿薩姆奶品種獨特的甘醇芳香",
+    price: 55
+  },
+
+  {
+    id: 13,
+    category: "戰豆奶茶",
+    name: "戰豆奶茶",
+    subtitle: "非基改豆漿＋紅茶",
+    price: 50
   }
+
 ];
-
-
-const sweets = [
-  "無糖",
-  "一分糖（10%）",
-  "三分糖（微糖）",
-  "五分糖（半糖）",
-  "八分糖（少糖）",
-  "十分糖（正常糖）"
-];
-
-
-const ices = [
-  "去冰",
-  "三分冰",
-  "八分冰",
-  "正常冰"
-];
-
-
-let cart = [];
-
-let selectedIce = "正常冰";
-
-let selectedSweet = "十分糖（正常糖）";
 
 
 
 /* =========================================================
-   飲料圖片
+   冰度 / 甜度
+   ========================================================= */
+
+const sweetnessOptions = [
+  "無糖",
+  "一分",
+  "三分",
+  "五分",
+  "八分",
+  "十分"
+];
+
+
+const iceOptions = [
+  "去冰",
+  "微冰",
+  "少冰",
+  "正常冰"
+];
+
+
+
+/* =========================================================
+   購物車
+   ========================================================= */
+
+const cart = [];
+
+
+
+/* =========================================================
+   購物袋
+   ========================================================= */
+
+let bag1Count = 0;
+
+let bag2Count = 0;
+
+
+
+/* =========================================================
+   快速選取 DOM
+   ========================================================= */
+
+function qs(selector) {
+
+  return document.querySelector(selector);
+
+}
+
+
+
+/* =========================================================
+   金額格式
+   ========================================================= */
+
+function money(number) {
+
+  return `$${number}`;
+
+}
+
+
+
+/* =========================================================
+   商品圖片
    ========================================================= */
 
 function drinkImg(name) {
 
+  const isMilk =
+    name.includes("鮮奶") ||
+    name.includes("豆奶");
+
+
   const hue =
-    name.includes("鮮奶")
+    isMilk
       ? "#ead1b2"
       : "#9d4a2b";
 
 
+  const teaColor =
+    isMilk
+      ? "#c58b58"
+      : "#6f2d1c";
+
+
   const svg = `
+
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width="120"
@@ -94,11 +236,7 @@ function drinkImg(name) {
 
       <path
         d="M38 43h44l-4 57q-18 10-36 0z"
-        fill="${
-          name.includes("鮮奶")
-            ? "#c58b58"
-            : "#6f2d1c"
-        }"
+        fill="${teaColor}"
       />
 
       <path
@@ -120,6 +258,7 @@ function drinkImg(name) {
       />
 
     </svg>
+
   `;
 
 
@@ -133,22 +272,43 @@ function drinkImg(name) {
 
 
 /* =========================================================
-   導覽列
+   商品卡片
    ========================================================= */
 
-function renderNav() {
+function productCard(product) {
 
-  document.getElementById("nav").innerHTML =
-    '<button class="active" onclick="filterCat(\'全部\',this)">🥤 全部飲品</button>' +
+  return `
 
-    menu
-      .map(
-        x =>
-          `<button onclick="filterCat('${x.cat}',this)">🍃 ${x.cat}</button>`
-      )
-      .join("") +
+    <article class="card">
 
-    '<button onclick="showAbout()">ⓘ 關於我們</button>';
+      <div>
+
+        <h3>
+          ${product.name}
+        </h3>
+
+        <p>
+          ${product.subtitle}
+        </p>
+
+        <div class="price">
+          ${money(product.price)}
+        </div>
+
+      </div>
+
+
+      <button
+        class="choose"
+        data-add="${product.id}"
+        type="button"
+      >
+        ＋ 選擇
+      </button>
+
+    </article>
+
+  `;
 
 }
 
@@ -158,229 +318,160 @@ function renderNav() {
    商品列表
    ========================================================= */
 
-function renderMenu(
-  filter = "全部",
-  q = ""
-) {
+function render(filter = "全部") {
 
-  const box =
-    document.getElementById("menu");
+  const blackTea =
+    qs("#blackTea");
+
+  const milkTea =
+    qs("#milkTea");
+
+  const soyTea =
+    qs("#soyTea");
 
 
-  box.innerHTML = "";
+  /*
+    清空商品區
+  */
+
+  if (blackTea) {
+
+    blackTea.innerHTML = "";
+
+  }
 
 
-  menu
+  if (milkTea) {
+
+    milkTea.innerHTML = "";
+
+  }
+
+
+  if (soyTea) {
+
+    soyTea.innerHTML = "";
+
+  }
+
+
+  /*
+    分類對應
+  */
+
+  const groups = {
+
+    "紅茶系列": "#blackTea",
+
+    "鮮奶茶系列": "#milkTea",
+
+    "戰豆奶茶": "#soyTea"
+
+  };
+
+
+  /*
+    依分類顯示商品
+  */
+
+  products
     .filter(
-      s =>
+      product =>
         filter === "全部" ||
-        s.cat === filter
+        product.category === filter
     )
-    .forEach(s => {
+    .forEach(
+      product => {
 
-      const items =
-        s.items.filter(
-          i =>
-            (i[0] + i[1])
-              .toLowerCase()
-              .includes(q.toLowerCase())
+        const target =
+          groups[product.category];
+
+
+        const container =
+          qs(target);
+
+
+        if (!container) {
+
+          return;
+
+        }
+
+
+        container.insertAdjacentHTML(
+          "beforeend",
+          productCard(product)
         );
 
-
-      if (!items.length) {
-        return;
       }
-
-
-      const sec =
-        document.createElement("section");
-
-
-      sec.className =
-        "section";
-
-
-      sec.innerHTML =
-        `
-        <h2>
-          ${s.cat}
-          <small>${s.en}</small>
-        </h2>
-
-        <div class="grid">
-
-          ${items
-            .map(
-              i =>
-                `
-                <article class="item">
-
-                  <img
-                    class="drink"
-                    src="${drinkImg(i[0])}"
-                  >
-
-                  <div>
-
-                    <h3>
-                      ${i[0]}
-                    </h3>
-
-                    <div class="desc">
-                      ${i[1]}
-                    </div>
-
-                    <div class="itemBottom">
-
-                      <span class="price">
-                        $${i[2]}
-                      </span>
-
-                      <button
-                        class="add"
-                        onclick='add("${i[0]}",${i[2]},"${i[1]}")'
-                      >
-                        ＋
-                      </button>
-
-                    </div>
-
-                  </div>
-
-                </article>
-                `
-            )
-            .join("")}
-
-        </div>
-        `;
-
-
-      box.appendChild(sec);
-
-    });
-
-}
-
-
-
-/* =========================================================
-   分類
-   ========================================================= */
-
-function filterCat(
-  cat,
-  el
-) {
-
-  document
-    .querySelectorAll(".side button")
-    .forEach(
-      x =>
-        x.classList.remove("active")
     );
 
 
-  el.classList.add("active");
+  /*
+    商品數量為 0 的區塊自動隱藏
+  */
+
+  document
+    .querySelectorAll(".section-title")
+    .forEach(title => {
+
+      const group =
+        title.nextElementSibling;
 
 
-  renderMenu(
-    cat,
-    document.getElementById("search").value
-  );
+      if (
+        group &&
+        group.children.length > 0
+      ) {
 
-}
+        title.parentElement.style.display =
+          "";
 
+      } else {
 
+        title.parentElement.style.display =
+          "none";
 
-/* =========================================================
-   冰甜度
-   ========================================================= */
-
-function renderOptions() {
-
-  document.getElementById("iceChips").innerHTML =
-    ices
-      .map(
-        x =>
-          `
-          <button
-            class="chip ${
-              x === selectedIce
-                ? "selected"
-                : ""
-            }"
-            onclick="selectGlobal('ice','${x}')"
-          >
-            ${x}
-          </button>
-          `
-      )
-      .join("");
-
-
-  document.getElementById("sweetChips").innerHTML =
-    sweets
-      .map(
-        x =>
-          `
-          <button
-            class="chip ${
-              x === selectedSweet
-                ? "selected"
-                : ""
-            }"
-            onclick="selectGlobal('sweet','${x}')"
-          >
-            ${x}
-          </button>
-          `
-      )
-      .join("");
-
-}
-
-
-
-/* =========================================================
-   選擇冰甜度
-   ========================================================= */
-
-function selectGlobal(
-  type,
-  v
-) {
-
-  if (type === "ice") {
-
-    selectedIce = v;
-
-  } else {
-
-    selectedSweet = v;
-
-  }
-
-
-  renderOptions();
-
-
-  if (cart.length) {
-
-    cart.forEach(x => {
-
-      x.ice =
-        selectedIce;
-
-      x.sweet =
-        selectedSweet;
+      }
 
     });
 
 
-    renderCart();
+  /*
+    分類按鈕 active
+  */
 
-  }
+  document
+    .querySelectorAll(".tabs button")
+    .forEach(button => {
+
+      button.classList.toggle(
+        "active",
+        button.dataset.filter === filter
+      );
+
+    });
+
+
+  /*
+    綁定加入購物車
+  */
+
+  document
+    .querySelectorAll("[data-add]")
+    .forEach(button => {
+
+      button.onclick = () => {
+
+        add(
+          Number(
+            button.dataset.add
+          )
+        );
+
+      };
+
+    });
 
 }
 
@@ -390,242 +481,105 @@ function selectGlobal(
    加入購物車
    ========================================================= */
 
-function add(
-  name,
-  price,
-  desc
-) {
+function add(id) {
 
-  cart.push({
-
-    name,
-
-    price,
-
-    desc,
-
-    ice:
-      selectedIce,
-
-    sweet:
-      selectedSweet,
-
-    qty: 1
-
-  });
-
-
-  renderCart();
-
-
-  toast(
-    "已加入購物車"
-  );
-
-}
-
-
-
-/* =========================================================
-   購物車
-   ========================================================= */
-
-function renderCart() {
-
-  const list =
-    document.getElementById("cartList");
-
-
-  const count =
-    cart.reduce(
-      (a, x) =>
-        a + x.qty,
-      0
+  const product =
+    products.find(
+      item =>
+        item.id === id
     );
 
 
-  const sub =
-    cart.reduce(
-      (a, x) =>
-        a + x.price * x.qty,
-      0
-    );
-
-
-  document.getElementById(
-    "topCount"
-  ).textContent =
-    count;
-
-
-  document.getElementById(
-    "cartCount"
-  ).textContent =
-    `(${count})`;
-
-
-  document.getElementById(
-    "cups"
-  ).textContent =
-    count + " 杯";
-
-
-  document.getElementById(
-    "subtotal"
-  ).textContent =
-    "$" + sub;
-
-
-  document.getElementById(
-    "total"
-  ).textContent =
-    "$" + sub;
-
-
-  document.getElementById(
-    "checkout"
-  ).disabled =
-    !cart.length;
-
-
-  document.getElementById(
-    "checkout"
-  ).textContent =
-    cart.length
-      ? "前往結帳"
-      : "選擇商品";
-
-
-  if (!cart.length) {
-
-    list.innerHTML =
-      `
-      <div class="empty">
-        尚未選擇任何飲品
-        <br>
-        快去選購喜歡的飲品吧！🍵
-      </div>
-      `;
+  if (!product) {
 
     return;
 
   }
 
 
-  list.innerHTML =
-    cart
-      .map(
-        (x, i) =>
-          `
-          <div class="cartItem">
+  /*
+    如果同商品、同甜度、同冰度，
+    就增加數量。
+  */
 
-            <div
-              style="
-                display:flex;
-                justify-content:space-between
-              "
-            >
-
-              <span class="cartName">
-                ${x.name}
-              </span>
-
-              <button
-                class="remove"
-                onclick="removeItem(${i})"
-              >
-                ✕
-              </button>
-
-            </div>
-
-
-            <div class="opt">
-              ${x.sweet}・${x.ice}
-            </div>
-
-
-            <div class="qrow">
-
-              <button
-                onclick="changeQty(${i},-1)"
-              >
-                −
-              </button>
-
-              <span>
-                ${x.qty}
-              </span>
-
-              <button
-                onclick="changeQty(${i},1)"
-              >
-                ＋
-              </button>
-
-              <b>
-                $${x.price * x.qty}
-              </b>
-
-            </div>
-
-          </div>
-          `
-      )
-      .join("");
-
-}
-
-
-
-/* =========================================================
-   修改數量
-   ========================================================= */
-
-function changeQty(
-  i,
-  d
-) {
-
-  cart[i].qty += d;
-
-
-  if (cart[i].qty <= 0) {
-
-    cart.splice(
-      i,
-      1
+  const found =
+    cart.find(
+      item =>
+        item.id === id &&
+        item.sweetness === "十分" &&
+        item.ice === "正常冰"
     );
+
+
+  if (found) {
+
+    found.quantity += 1;
+
+  } else {
+
+    cart.push({
+
+      id:
+        product.id,
+
+      name:
+        product.name,
+
+      subtitle:
+        product.subtitle,
+
+      price:
+        product.price,
+
+      quantity:
+        1,
+
+      sweetness:
+        "十分",
+
+      ice:
+        "正常冰"
+
+    });
 
   }
 
 
-  renderCart();
-
-}
+  updateCart();
 
 
-
-/* =========================================================
-   刪除商品
-   ========================================================= */
-
-function removeItem(i) {
-
-  cart.splice(
-    i,
-    1
+  toast(
+    `${product.name} 已加入訂單`
   );
 
+}
 
-  renderCart();
+
+
+/* =========================================================
+   飲料總杯數
+   ========================================================= */
+
+function getDrinkCount() {
+
+  return cart.reduce(
+    (sum, item) =>
+      sum +
+      Math.max(
+        0,
+        Number(
+          item.quantity || 0
+        )
+      ),
+    0
+  );
 
 }
 
 
 
 /* =========================================================
-   取餐時間計算
+   取餐時間製作時間
    =========================================================
 
    1～2 杯   → 15 分鐘
@@ -635,61 +589,50 @@ function removeItem(i) {
    9～10 杯  → 40 分鐘
    11～15 杯 → 50 分鐘
    16 杯以上 → 60 分鐘
-
-   每 5 分鐘一個可選時段。
-   客人不能自行輸入。
    ========================================================= */
 
-function getPickupDelayMinutes() {
+function getPreparationMinutes() {
 
-  const cupCount =
-    cart.reduce(
-      (sum, item) =>
-        sum +
-        Math.max(
-          0,
-          Number(item.qty || 0)
-        ),
-      0
-    );
+  const cups =
+    getDrinkCount();
 
 
-  if (cupCount <= 2) {
+  if (cups <= 2) {
 
     return 15;
 
   }
 
 
-  if (cupCount <= 4) {
+  if (cups <= 4) {
 
     return 20;
 
   }
 
 
-  if (cupCount <= 6) {
+  if (cups <= 6) {
 
     return 25;
 
   }
 
 
-  if (cupCount <= 8) {
+  if (cups <= 8) {
 
     return 30;
 
   }
 
 
-  if (cupCount <= 10) {
+  if (cups <= 10) {
 
     return 40;
 
   }
 
 
-  if (cupCount <= 15) {
+  if (cups <= 15) {
 
     return 50;
 
@@ -706,9 +649,7 @@ function getPickupDelayMinutes() {
    時間補 0
    ========================================================= */
 
-function padTime(
-  number
-) {
+function pad(number) {
 
   return String(
     number
@@ -722,52 +663,153 @@ function padTime(
 
 
 /* =========================================================
-   產生取餐時間選項
+   產生取餐時間
    ========================================================= */
 
-function buildPickupTimeOptions() {
+function updatePickupTimeOptions() {
 
-  const select =
-    document.getElementById(
-      "pickupDateTime"
+  const input =
+    document.querySelector(
+      '[name="pickupDateTime"]'
     );
 
 
-  if (!select) {
+  if (!input) {
 
     return;
 
   }
 
 
-  const delay =
-    getPickupDelayMinutes();
+  /*
+    如果目前還是 input，
+    把它換成 select。
 
+    因此不需要修改 index.html。
+  */
+
+  let select;
+
+
+  if (
+    input.tagName.toLowerCase() ===
+    "select"
+  ) {
+
+    select =
+      input;
+
+  } else {
+
+    select =
+      document.createElement(
+        "select"
+      );
+
+
+    /*
+      完整保留原本 input 的屬性
+    */
+
+    Array.from(
+      input.attributes
+    ).forEach(attribute => {
+
+      if (
+        attribute.name !==
+          "placeholder" &&
+        attribute.name !==
+          "type"
+      ) {
+
+        select.setAttribute(
+          attribute.name,
+          attribute.value
+        );
+
+      }
+
+    });
+
+
+    select.id =
+      "pickupDateTime";
+
+
+    select.name =
+      "pickupDateTime";
+
+
+    select.required =
+      true;
+
+
+    /*
+      保留原本的 class，
+      如果有的話。
+    */
+
+    if (input.className) {
+
+      select.className =
+        input.className;
+
+    }
+
+
+    input.replaceWith(
+      select
+    );
+
+  }
+
+
+  /*
+    記住原本選擇
+  */
+
+  const oldValue =
+    select.value;
+
+
+  /*
+    計算製作時間
+  */
+
+  const preparationMinutes =
+    getPreparationMinutes();
+
+
+  /*
+    現在時間
+  */
 
   const now =
     new Date();
 
 
   /*
-    計算最早可以取餐的時間
+    最早可取餐時間
   */
 
   const earliest =
     new Date(
       now.getTime() +
-      delay * 60 * 1000
+      preparationMinutes *
+      60 *
+      1000
     );
 
 
   /*
-    向上對齊到 5 分鐘。
+    對齊到下一個 5 分鐘。
 
     例如：
-    14:36
-    → 14:40
+    14:46
+    → 14:50
 
-    14:41
-    → 14:45
+    14:51
+    → 14:55
   */
 
   const remainder =
@@ -788,30 +830,46 @@ function buildPickupTimeOptions() {
     0
   );
 
+
   earliest.setMilliseconds(
     0
   );
 
 
   /*
-    保留原本選擇
+    清空選項
   */
 
-  const oldValue =
-    select.value;
-
-
-  select.innerHTML =
-    `
-    <option value="">
-      請選擇取餐時間
-    </option>
-    `;
+  select.innerHTML = "";
 
 
   /*
-    提供未來 2 小時的選擇。
-    共 24 個時段，每 5 分鐘一格。
+    第一個提示
+  */
+
+  const firstOption =
+    document.createElement(
+      "option"
+    );
+
+
+  firstOption.value =
+    "";
+
+
+  firstOption.textContent =
+    `請選擇取餐時間（至少 ${preparationMinutes} 分鐘後）`;
+
+
+  select.appendChild(
+    firstOption
+  );
+
+
+  /*
+    提供未來 2 小時。
+
+    每 5 分鐘一個時段。
   */
 
   for (
@@ -823,7 +881,10 @@ function buildPickupTimeOptions() {
     const time =
       new Date(
         earliest.getTime() +
-        i * 5 * 60 * 1000
+        i *
+        5 *
+        60 *
+        1000
       );
 
 
@@ -844,7 +905,7 @@ function buildPickupTimeOptions() {
 
 
     const value =
-      `${month}/${day} ${padTime(hour)}:${padTime(minute)}`;
+      `${month}/${day} ${pad(hour)}:${pad(minute)}`;
 
 
     const option =
@@ -869,8 +930,8 @@ function buildPickupTimeOptions() {
 
 
   /*
-    如果原本選擇的時間還存在，
-    保留它。
+    如果原本選擇還存在，
+    保留原本選擇。
   */
 
   if (oldValue) {
@@ -894,255 +955,560 @@ function buildPickupTimeOptions() {
 
   }
 
+
+  /*
+    取餐時間外觀微調
+  */
+
+  select.style.width =
+    "100%";
+
+  select.style.padding =
+    "12px";
+
+  select.style.borderRadius =
+    "10px";
+
+  select.style.border =
+    "1px solid #dccfc2";
+
+  select.style.background =
+    "#fff";
+
+  select.style.fontSize =
+    "16px";
+
 }
 
 
 
 /* =========================================================
-   確認訂單
+   購物車數量
    ========================================================= */
 
-function openCheckout() {
+function updateCart() {
+
+  const count =
+    getDrinkCount();
+
+
+  const cartCount =
+    qs("#cartCount");
+
+
+  if (cartCount) {
+
+    cartCount.textContent =
+      count;
+
+  }
+
 
   /*
-    開啟確認訂單之前，
-    先重新計算一次杯數與時間。
+    如果購物車已經開啟，
+    杯數改變時重新計算取餐時間。
   */
 
-  const delay =
-    getPickupDelayMinutes();
+  if (
+    document.querySelector(
+      "#cartDialog"
+    )?.open
+  ) {
+
+    updatePickupTimeOptions();
+
+  }
+
+}
 
 
-  document.getElementById(
-    "panel"
-  ).innerHTML =
 
-    `
-    <h2>
-      確認訂單
-    </h2>
+/* =========================================================
+   顯示購物車內容
+   ========================================================= */
 
+function renderCart() {
 
-    <p style="color:var(--muted)">
-      取餐方式：
-      <b>到店自取</b>
-      　
-      付款方式：
-      <b>僅收現金</b>
-    </p>
+  const box =
+    qs("#cartItems");
 
 
-    <div
-      style="
-        background:#fff;
-        border:1px solid var(--line);
-        border-radius:12px;
-        padding:12px
-      "
-    >
+  if (!box) {
 
-      ${
-        cart
-          .map(
-            x =>
-              `
-              <div
-                style="
-                  display:flex;
-                  justify-content:space-between;
-                  padding:8px 0;
-                  border-bottom:1px solid #f2e8df
-                "
+    return;
+
+  }
+
+
+  if (!cart.length) {
+
+    box.innerHTML =
+      `
+      <p>
+        目前還沒有選擇商品。
+      </p>
+      `;
+
+
+    const total =
+      qs("#cartTotal");
+
+
+    if (total) {
+
+      total.textContent =
+        "$0";
+
+    }
+
+
+    return;
+
+  }
+
+
+  box.innerHTML =
+
+    cart
+      .map(
+        (item, index) =>
+
+          `
+          <div class="cart-row">
+
+            <strong>
+              ${item.name}
+            </strong>
+
+           　
+            ${money(item.price)}
+
+
+            <div class="cart-controls">
+
+              <button
+                type="button"
+                data-minus="${index}"
+              >
+                −
+              </button>
+
+
+              <span>
+                ${item.quantity}
+              </span>
+
+
+              <button
+                type="button"
+                data-plus="${index}"
+              >
+                ＋
+              </button>
+
+
+              <select
+                data-sweet="${index}"
               >
 
-                <span>
+                ${sweetnessOptions
+                  .map(
+                    value =>
+                      `
+                      <option
+                        value="${value}"
+                        ${
+                          item.sweetness === value
+                            ? "selected"
+                            : ""
+                        }
+                      >
+                        ${value}
+                      </option>
+                      `
+                  )
+                  .join("")}
 
-                  <b>
-                    ${x.name}
-                  </b>
-
-                  × ${x.qty}
-
-                  <small
-                    style="
-                      display:block;
-                      color:#888
-                    "
-                  >
-                    ${x.sweet}・${x.ice}
-                  </small>
-
-                </span>
-
-                <b>
-                  $${x.price * x.qty}
-                </b>
-
-              </div>
-              `
-          )
-          .join("")
-      }
-
-    </div>
+              </select>
 
 
-    <div
-      class="form"
-      style="margin-top:15px"
-    >
+              <select
+                data-ice="${index}"
+              >
 
-      <label>
-        取餐人姓名
-      </label>
+                ${iceOptions
+                  .map(
+                    value =>
+                      `
+                      <option
+                        value="${value}"
+                        ${
+                          item.ice === value
+                            ? "selected"
+                            : ""
+                        }
+                      >
+                        ${value}
+                      </option>
+                      `
+                  )
+                  .join("")}
 
-      <input
-        id="customer"
-        placeholder="請輸入姓名"
-      >
+              </select>
 
+            </div>
 
-      <label>
-        聯絡電話
-      </label>
-
-      <input
-        id="phone"
-        type="tel"
-        inputmode="tel"
-        placeholder="請輸入手機或電話"
-      >
-
-
-      <label>
-        取餐時間
-      </label>
-
-
-      <!--
-        重要：
-        不使用 input。
-        使用 select，
-        客人不能自行輸入時間。
-      -->
-
-      <select
-        id="pickupDateTime"
-        aria-label="取餐日期與時間"
-        style="
-          width:100%;
-          border:1px solid var(--line);
-          border-radius:9px;
-          padding:10px;
-          background:#fff;
-          outline:none;
-          font-size:16px;
-        "
-      >
-
-        <option value="">
-          請選擇取餐時間
-        </option>
-
-      </select>
-
-
-      <div
-        style="
-          margin-top:8px;
-          padding:11px 12px;
-          background:#fff8ef;
-          border:1px solid #ead8c6;
-          border-radius:10px;
-          color:#7a675b;
-          font-size:14px;
-          line-height:1.6
-        "
-      >
-
-        如訂購杯數較多，需較長製作時間，
-        請提早訂購或來電詢問，謝謝。
-
-      </div>
-
-
-      <div
-        style="
-          margin-top:8px;
-          padding:10px 12px;
-          background:#f7f1ea;
-          border-radius:10px;
-          color:#6e5a4e;
-          font-size:13px;
-          line-height:1.6
-        "
-      >
-
-        目前共
-        <b>${cart.reduce((sum, item) => sum + item.qty, 0)} 杯</b>，
-        系統預留製作時間約
-        <b>${delay} 分鐘</b>。
-
-        <br>
-
-        請從下方選擇可取餐時間。
-
-      </div>
-
-
-      <label>
-        訂單備注
-      </label>
-
-      <textarea
-        id="remark"
-        rows="3"
-        placeholder="例如：到店後請告知取餐、其他需求…"
-      ></textarea>
-
-
-      <label>
-        統一編號（選填）
-      </label>
-
-      <input
-        id="taxId"
-        placeholder="如需統編請填寫"
-      >
-
-    </div>
-
-
-    <div class="actions">
-
-      <button
-        onclick="closeModal()"
-      >
-        返回修改
-      </button>
-
-
-      <button
-        class="primary"
-        onclick="placeOrder()"
-      >
-        送出訂單
-      </button>
-
-    </div>
-    `;
+          </div>
+          `
+      )
+      .join("");
 
 
   /*
-    產生下拉選單
+    飲料金額
   */
 
-  buildPickupTimeOptions();
+  const drinkTotal =
+    cart.reduce(
+      (
+        sum,
+        item
+      ) =>
+        sum +
+        item.price *
+        item.quantity,
+      0
+    );
 
+
+  /*
+    購物袋金額
+  */
+
+  const bagTotal =
+    bag1Count * 1 +
+    bag2Count * 2;
+
+
+  /*
+    最終總額
+  */
+
+  const total =
+    drinkTotal +
+    bagTotal;
+
+
+  const totalElement =
+    qs("#cartTotal");
+
+
+  if (totalElement) {
+
+    totalElement.textContent =
+      money(total);
+
+  }
+
+
+  /*
+    減少
+  */
 
   document
-    .getElementById("modal")
-    .classList.add("open");
+    .querySelectorAll(
+      "[data-minus]"
+    )
+    .forEach(button => {
+
+      button.onclick =
+        () => {
+
+          const index =
+            Number(
+              button.dataset.minus
+            );
+
+
+          cart[index].quantity -=
+            1;
+
+
+          if (
+            cart[index].quantity <= 0
+          ) {
+
+            cart.splice(
+              index,
+              1
+            );
+
+          }
+
+
+          renderCart();
+
+          updateCart();
+
+        };
+
+    });
+
+
+  /*
+    增加
+  */
+
+  document
+    .querySelectorAll(
+      "[data-plus]"
+    )
+    .forEach(button => {
+
+      button.onclick =
+        () => {
+
+          const index =
+            Number(
+              button.dataset.plus
+            );
+
+
+          cart[index].quantity +=
+            1;
+
+
+          renderCart();
+
+          updateCart();
+
+        };
+
+    });
+
+
+  /*
+    甜度
+  */
+
+  document
+    .querySelectorAll(
+      "[data-sweet]"
+    )
+    .forEach(select => {
+
+      select.onchange =
+        () => {
+
+          const index =
+            Number(
+              select.dataset.sweet
+            );
+
+
+          cart[index].sweetness =
+            select.value;
+
+        };
+
+    });
+
+
+  /*
+    冰度
+  */
+
+  document
+    .querySelectorAll(
+      "[data-ice]"
+    )
+    .forEach(select => {
+
+      select.onchange =
+        () => {
+
+          const index =
+            Number(
+              select.dataset.ice
+            );
+
+
+          cart[index].ice =
+            select.value;
+
+        };
+
+    });
+
+}
+
+
+
+/* =========================================================
+   購物車按鈕
+   ========================================================= */
+
+const cartButton =
+  qs("#cartButton");
+
+
+if (cartButton) {
+
+  cartButton.onclick =
+    () => {
+
+      renderCart();
+
+      /*
+        打開之前重新計算
+      */
+
+      updatePickupTimeOptions();
+
+
+      const dialog =
+        qs("#cartDialog");
+
+
+      if (
+        dialog &&
+        typeof dialog.showModal ===
+          "function"
+      ) {
+
+        dialog.showModal();
+
+      }
+
+    };
+
+}
+
+
+
+/* =========================================================
+   關閉購物車
+   ========================================================= */
+
+const closeCart =
+  qs("#closeCart");
+
+
+if (closeCart) {
+
+  closeCart.onclick =
+    () => {
+
+      const dialog =
+        qs("#cartDialog");
+
+
+      if (dialog) {
+
+        dialog.close();
+
+      }
+
+    };
+
+}
+
+
+
+/* =========================================================
+   點擊 Dialog 外部關閉
+   ========================================================= */
+
+const cartDialog =
+  qs("#cartDialog");
+
+
+if (cartDialog) {
+
+  cartDialog.addEventListener(
+    "click",
+    event => {
+
+      if (
+        event.target ===
+        cartDialog
+      ) {
+
+        cartDialog.close();
+
+      }
+
+    }
+  );
+
+}
+
+
+
+/* =========================================================
+   購物袋
+   ========================================================= */
+
+function changeBag(
+  type,
+  amount
+) {
+
+  if (
+    type ===
+    "bag1"
+  ) {
+
+    bag1Count =
+      Math.max(
+        0,
+        bag1Count +
+        amount
+      );
+
+
+    const element =
+      qs("#bag1Count");
+
+
+    if (element) {
+
+      element.textContent =
+        bag1Count;
+
+    }
+
+  }
+
+
+  if (
+    type ===
+    "bag2"
+  ) {
+
+    bag2Count =
+      Math.max(
+        0,
+        bag2Count +
+        amount
+      );
+
+
+    const element =
+      qs("#bag2Count");
+
+
+    if (element) {
+
+      element.textContent =
+        bag2Count;
+
+    }
+
+  }
+
+
+  renderCart();
 
 }
 
@@ -1152,672 +1518,364 @@ function openCheckout() {
    送出訂單
    ========================================================= */
 
-async function placeOrder() {
+const orderForm =
+  qs("#orderForm");
 
-  const name =
-    document
-      .getElementById("customer")
-      .value
-      .trim();
 
+if (orderForm) {
 
-  const phone =
-    document
-      .getElementById("phone")
-      .value
-      .trim();
+  orderForm.onsubmit =
+    async event => {
 
+      event.preventDefault();
 
-  const pickupSelect =
-    document.getElementById(
-      "pickupDateTime"
-    );
 
+      if (!cart.length) {
 
-  /*
-    送出前再次重新產生時間，
-    避免客人在確認視窗停留太久，
-    導致原本的時間已經太接近。
-  */
+        toast(
+          "請先選擇商品"
+        );
 
-  const selectedPickupTime =
-    pickupSelect
-      ? pickupSelect.value
-      : "";
+        return;
 
+      }
 
-  buildPickupTimeOptions();
 
+      /*
+        送出之前再重新計算一次。
+      */
 
-  const pickupDateTime =
-    document
-      .getElementById(
-        "pickupDateTime"
-      )
-      .value
-      .trim();
+      updatePickupTimeOptions();
 
 
-  const note =
-    document
-      .getElementById("remark")
-      .value
-      .trim();
+      const formData =
+        new FormData(
+          orderForm
+        );
 
 
-  const taxId =
-    document
-      .getElementById("taxId")
-      .value
-      .trim();
+      const name =
+        String(
+          formData.get("name") ||
+          ""
+        ).trim();
 
 
-  if (!name || !phone) {
+      const phone =
+        String(
+          formData.get("phone") ||
+          ""
+        ).trim();
 
-    toast(
-      "請填寫取餐人姓名與電話"
-    );
 
-    return;
+      const pickupDateTime =
+        String(
+          formData.get(
+            "pickupDateTime"
+          ) ||
+          ""
+        ).trim();
 
-  }
 
+      const note =
+        String(
+          formData.get("note") ||
+          ""
+        ).trim();
 
-  if (!pickupDateTime) {
 
-    toast(
-      "請選擇取餐時間"
-    );
+      if (!name) {
 
-    return;
+        toast(
+          "請輸入姓名"
+        );
 
-  }
+        return;
 
+      }
 
-  if (!cart.length) {
 
-    toast(
-      "請至少選擇一杯茶"
-    );
+      if (!phone) {
 
-    return;
+        toast(
+          "請輸入電話"
+        );
 
-  }
+        return;
 
+      }
 
-  /*
-    再做一次最終檢查。
 
-    如果客人停留時間太久，
-    系統會重新計算現在最早可以取餐的時間。
-  */
+      if (!pickupDateTime) {
 
-  const delay =
-    getPickupDelayMinutes();
+        toast(
+          "請選擇取餐時間"
+        );
 
+        return;
 
-  const now =
-    new Date();
+      }
 
 
-  const earliest =
-    new Date(
-      now.getTime() +
-      delay * 60 * 1000
-    );
+      /*
+        最終重新取得杯數
+      */
 
+      const cups =
+        getDrinkCount();
 
-  const remainder =
-    earliest.getMinutes() % 5;
 
+      /*
+        最終製作時間
+      */
 
-  if (remainder !== 0) {
+      const preparationMinutes =
+        getPreparationMinutes();
 
-    earliest.setMinutes(
-      earliest.getMinutes() +
-      (5 - remainder)
-    );
 
-  }
+      /*
+        建立送給後端的訂單
+      */
 
+      const payload = {
 
-  earliest.setSeconds(
-    0
-  );
+        customer: {
 
-  earliest.setMilliseconds(
-    0
-  );
+          name,
 
+          phone,
 
-  /*
-    將客人選擇的 MM/DD HH:mm
-    轉換成今年的 Date，
-    用來確認沒有選到過早時間。
-  */
+          pickupDateTime,
 
-  const match =
-    pickupDateTime.match(
-      /^(\d{1,2})\/(\d{1,2})\s+(\d{2}):(\d{2})$/
-    );
+          note
 
+        },
 
-  if (!match) {
 
-    toast(
-      "取餐時間格式錯誤，請重新選擇"
-    );
+        items:
 
-    return;
+          cart.map(
+            item => ({
 
-  }
+              id:
+                item.id,
 
+              name:
+                item.name,
 
-  const selectedMonth =
-    Number(match[1]);
+              price:
+                item.price,
 
+              quantity:
+                item.quantity,
 
-  const selectedDay =
-    Number(match[2]);
+              sweetness:
+                item.sweetness,
 
+              ice:
+                item.ice
 
-  const selectedHour =
-    Number(match[3]);
+            })
+          ),
 
 
-  const selectedMinute =
-    Number(match[4]);
+        bag1Count,
 
+        bag2Count,
 
-  const selectedDate =
-    new Date(
-      now.getFullYear(),
-      selectedMonth - 1,
-      selectedDay,
-      selectedHour,
-      selectedMinute,
-      0,
-      0
-    );
 
+        /*
+          額外傳送製作資訊。
+          舊版後端即使不使用也不會影響。
+        */
 
-  /*
-    如果選到的時間早於系統允許時間，
-    不允許送出。
-  */
+        preparationMinutes,
 
-  if (
-    selectedDate.getTime() <
-    earliest.getTime()
-  ) {
+        drinkCount:
+          cups
 
-    toast(
-      "取餐時間已不足製作時間，請重新選擇"
-    );
+      };
 
 
-    buildPickupTimeOptions();
+      const result =
+        qs("#result");
 
 
-    return;
+      if (result) {
 
-  }
+        result.className = "";
 
+        result.textContent =
+          "送出中…";
 
-  const payload = {
+      }
 
-    customer: {
-
-      name,
-
-      phone,
-
-      pickupDateTime,
-
-      note,
-
-      taxId
-
-    },
-
-
-    items:
-
-      cart.map(
-        x => ({
-
-          name:
-            x.name,
-
-          price:
-            x.price,
-
-          quantity:
-            x.qty
-
-        })
-      )
-
-  };
-
-
-  try {
-
-    const response =
-      await fetch(
-        "/api/orders",
-        {
-
-          method:
-            "POST",
-
-          headers:
-            {
-              "Content-Type":
-                "application/json"
-            },
-
-          body:
-            JSON.stringify(
-              payload
-            )
-
-        }
-      );
-
-
-    const data =
-      await response.json();
-
-
-    if (
-      !response.ok ||
-      !data.ok
-    ) {
-
-      throw new Error(
-        data.message ||
-        "訂單送出失敗"
-      );
-
-    }
-
-
-    localStorage.setItem(
-      "teaHouseOrderId",
-      data.orderId
-    );
-
-
-    cart = [];
-
-
-    closeModal();
-
-
-    renderCart();
-
-
-    showOrderStatus({
-
-      id:
-        data.orderId,
-
-      status:
-        "new",
-
-      estimatedPickupTime:
-        data.estimatedPickupTime
-
-    });
-
-
-    connectCustomerOrder(
-      data.orderId
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      error
-    );
-
-
-    toast(
-      error.message ||
-      "訂單送出失敗，請稍後再試"
-    );
-
-  }
-
-}
-
-
-
-/* =========================================================
-   訂單狀態
-   ========================================================= */
-
-function showOrderStatus(
-  order
-) {
-
-  const box =
-    document.getElementById(
-      "orderStatus"
-    );
-
-
-  const text =
-    document.getElementById(
-      "orderStatusText"
-    );
-
-
-  if (!box || !text) {
-
-    return;
-
-  }
-
-
-  box.style.display =
-    "block";
-
-
-  if (
-    order.status ===
-      "confirmed" &&
-    order.pickupTime
-  ) {
-
-    text.innerHTML =
-
-      "🟢 店家已確認取餐時間<br>" +
-
-      "<strong style='font-size:24px;color:#217a2d'>" +
-
-      escapeHtml(
-        order.pickupTime
-      ) +
-
-      "</strong><br>" +
-
-      "請依確認時間到店取餐，謝謝！";
-
-
-    return;
-
-  }
-
-
-  if (
-    order.estimatedPickupTime
-  ) {
-
-    const t =
-      new Date(
-        order.estimatedPickupTime
-      );
-
-
-    const time =
-      t.toLocaleTimeString(
-        "zh-TW",
-        {
-          hour:
-            "2-digit",
-
-          minute:
-            "2-digit",
-
-          hour12:
-            false
-        }
-      );
-
-
-    text.innerHTML =
-
-      "⏳ 訂單已送出，等待店家確認<br>" +
-
-      "系統預估約 <strong>" +
-
-      time +
-
-      "</strong> 可取餐";
-
-
-  } else {
-
-    text.textContent =
-      "⏳ 訂單已送出，等待店家確認取餐時間";
-
-  }
-
-}
-
-
-
-/* =========================================================
-   HTML 安全處理
-   ========================================================= */
-
-function escapeHtml(
-  value
-) {
-
-  return String(
-    value ?? ""
-  )
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
-    );
-
-}
-
-
-
-/* =========================================================
-   客人即時訂單通知
-   ========================================================= */
-
-let customerOrderStream =
-  null;
-
-
-
-function connectCustomerOrder(
-  orderId
-) {
-
-  if (
-    customerOrderStream
-  ) {
-
-    customerOrderStream.close();
-
-  }
-
-
-  customerOrderStream =
-    new EventSource(
-      "/api/orders/" +
-      encodeURIComponent(
-        orderId
-      ) +
-      "/stream"
-    );
-
-
-  customerOrderStream.onmessage =
-    event => {
 
       try {
 
-        const data =
-          JSON.parse(
-            event.data
+        const response =
+          await fetch(
+            "/api/orders",
+            {
+
+              method:
+                "POST",
+
+              headers:
+                {
+                  "Content-Type":
+                    "application/json"
+                },
+
+              body:
+                JSON.stringify(
+                  payload
+                )
+
+            }
           );
+
+
+        const data =
+          await response.json();
 
 
         if (
-          data.type ===
-            "order-updated" &&
-          data.order
+          !response.ok
         ) {
 
-          showOrderStatus(
-            data.order
+          throw new Error(
+            data.message ||
+            "訂單送出失敗"
           );
 
+        }
 
-          if (
-            data.order.status ===
-              "confirmed" &&
-            data.order.pickupTime
-          ) {
 
-            toast(
-              "🔔 店家已確認取餐時間：" +
-              data.order.pickupTime
-            );
+        /*
+          顯示訂單結果
+        */
 
-          }
+        if (result) {
+
+          result.className =
+            "success";
+
+
+          result.innerHTML =
+
+            `
+            訂單已送出！
+
+            <br>
+
+            <strong>
+              訂單編號：
+              ${data.orderId || ""}
+            </strong>
+
+            <br>
+
+            合計
+            $${data.total || 0}
+
+            ，請到店取餐並現場付款。
+            `;
 
         }
+
+
+        /*
+          清空購物車
+        */
+
+        cart.length =
+          0;
+
+
+        bag1Count =
+          0;
+
+
+        bag2Count =
+          0;
+
+
+        updateCart();
+
+
+        /*
+          重設表單
+        */
+
+        orderForm.reset();
+
+
+        /*
+          更新購物袋顯示
+        */
+
+        const bag1 =
+          qs("#bag1Count");
+
+
+        const bag2 =
+          qs("#bag2Count");
+
+
+        if (bag1) {
+
+          bag1.textContent =
+            "0";
+
+        }
+
+
+        if (bag2) {
+
+          bag2.textContent =
+            "0";
+
+        }
+
+
+        /*
+          重新顯示空購物車
+        */
+
+        renderCart();
+
 
       } catch (error) {
 
         console.error(
-          "客人訂單通知錯誤",
+          "訂單送出錯誤：",
           error
         );
+
+
+        if (result) {
+
+          result.className =
+            "error";
+
+
+          result.textContent =
+            error.message ||
+            "訂單送出失敗";
+
+        } else {
+
+          toast(
+            error.message ||
+            "訂單送出失敗"
+          );
+
+        }
 
       }
 
     };
-
-
-  customerOrderStream.onerror =
-    () => {
-
-      /*
-        EventSource
-        會自動重新連線
-      */
-
-    };
-
-}
-
-
-
-/* =========================================================
-   恢復客人訂單
-   ========================================================= */
-
-function restoreCustomerOrder() {
-
-  const orderId =
-    localStorage.getItem(
-      "teaHouseOrderId"
-    );
-
-
-  if (orderId) {
-
-    connectCustomerOrder(
-      orderId
-    );
-
-  }
-
-}
-
-
-
-/* =========================================================
-   關於我們
-   ========================================================= */
-
-function showAbout() {
-
-  document.getElementById(
-    "panel"
-  ).innerHTML =
-
-    `
-    <h2>
-      關於藥師的私房紅茶
-    </h2>
-
-    <p>
-      週三－週日 11:00－22:00
-    </p>
-
-    <p>
-      📍 700 臺南市中西區小西門里府前路一段373號
-    </p>
-
-    <p>
-      ☎ 06-2135250
-    </p>
-
-    <p>
-      本店採現點現做，
-      線上訂餐僅提供到店自取，
-      付款方式為現金。
-    </p>
-
-    <div class="actions">
-
-      <button
-        class="primary"
-        onclick="closeModal()"
-      >
-        關閉
-      </button>
-
-    </div>
-    `;
-
-
-  document
-    .getElementById("modal")
-    .classList.add("open");
-
-}
-
-
-
-/* =========================================================
-   關閉視窗
-   ========================================================= */
-
-function closeModal() {
-
-  document
-    .getElementById("modal")
-    .classList.remove("open");
 
 }
 
@@ -1827,36 +1885,37 @@ function closeModal() {
    Toast
    ========================================================= */
 
-function toast(t) {
+function toast(text) {
 
-  const e =
-    document.getElementById(
-      "toast"
-    );
+  const element =
+    qs("#toast");
 
 
-  if (!e) {
+  if (!element) {
 
     return;
 
   }
 
 
-  e.textContent =
-    t;
+  element.textContent =
+    text;
 
 
-  e.classList.add(
+  element.classList.add(
     "show"
   );
 
 
   setTimeout(
-    () =>
-      e.classList.remove(
+    () => {
+
+      element.classList.remove(
         "show"
-      ),
-    1900
+      );
+
+    },
+    1800
   );
 
 }
@@ -1864,59 +1923,25 @@ function toast(t) {
 
 
 /* =========================================================
-   搜尋
+   分類按鈕
    ========================================================= */
 
-const searchElement =
-  document.getElementById(
-    "search"
-  );
+document
+  .querySelectorAll(
+    ".tabs button"
+  )
+  .forEach(button => {
 
+    button.onclick =
+      () => {
 
-if (searchElement) {
+        render(
+          button.dataset.filter
+        );
 
-  searchElement.addEventListener(
-    "input",
-    e =>
-      renderMenu(
-        "全部",
-        e.target.value
-      )
-  );
+      };
 
-}
-
-
-
-/* =========================================================
-   點擊 Modal 外部關閉
-   ========================================================= */
-
-const modalElement =
-  document.getElementById(
-    "modal"
-  );
-
-
-if (modalElement) {
-
-  modalElement.addEventListener(
-    "click",
-    e => {
-
-      if (
-        e.target.id ===
-        "modal"
-      ) {
-
-        closeModal();
-
-      }
-
-    }
-  );
-
-}
+  });
 
 
 
@@ -1924,12 +1949,87 @@ if (modalElement) {
    初始化
    ========================================================= */
 
-renderNav();
+render();
 
-renderMenu();
-
-renderOptions();
+updateCart();
 
 renderCart();
 
-restoreCustomerOrder();
+
+/*
+  一開始先把取餐時間 input
+  轉成不能手動輸入的 select。
+
+  此時購物車是 0 杯，
+  所以先不計算真正時間。
+*/
+
+function initializePickupTimeField() {
+
+  const input =
+    document.querySelector(
+      '[name="pickupDateTime"]'
+    );
+
+
+  if (!input) {
+
+    return;
+
+  }
+
+
+  if (
+    input.tagName.toLowerCase() !==
+    "select"
+  ) {
+
+    const select =
+      document.createElement(
+        "select"
+      );
+
+
+    select.id =
+      "pickupDateTime";
+
+
+    select.name =
+      "pickupDateTime";
+
+
+    select.required =
+      true;
+
+
+    input.replaceWith(
+      select
+    );
+
+  }
+
+}
+
+
+initializePickupTimeField();
+
+
+
+/* =========================================================
+   每分鐘更新一次
+   ========================================================= */
+
+setInterval(
+  () => {
+
+    if (
+      cart.length > 0
+    ) {
+
+      updatePickupTimeOptions();
+
+    }
+
+  },
+  60 * 1000
+);
