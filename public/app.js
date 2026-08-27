@@ -1,76 +1,16 @@
 /* =========================================================
-   藥師的私房紅茶
-   前台 app.js
-   ========================================================= */
-
-
-/* =========================================================
-   商品資料
+   藥師的私房紅茶｜前台 app.js
+   功能：商品選擇 → 先選數量/甜度/冰塊 → 加入購物車
    ========================================================= */
 
 const products = [
-
-  {
-    id: 1,
-    category: "紅茶系列",
-    name: "老樹麥香",
-    subtitle: "古早味傳統紅茶",
-    price: 30
-  },
-
-  {
-    id: 2,
-    category: "紅茶系列",
-    name: "菁玉紅茶",
-    subtitle: "英式下午茶",
-    price: 45
-  },
-
-  {
-    id: 3,
-    category: "紅茶系列",
-    name: "蜜香紅茶",
-    subtitle: "茶葉回甘帶有熟蜜的香氣",
-    price: 45
-  },
-
-  {
-    id: 4,
-    category: "紅茶系列",
-    name: "觀音紅茶",
-    subtitle: "帶有微微自然風味的紅茶",
-    price: 45
-  },
-
-  {
-    id: 5,
-    category: "紅茶系列",
-    name: "紫霞仙子紅茶",
-    subtitle: "阿薩姆基底，獨特果香，醇厚回甘",
-    price: 50
-  },
-
-  {
-    id: 6,
-    category: "紅茶系列",
-    name: "藥師皇茶",
-    subtitle: "獨特的山林木質香氣",
-    price: 55
-  },
-
-  {
-    id: 7,
-    category: "紅茶系列",
-    name: "台茶十八號（紅玉）",
-    subtitle: "茶香獨特，口感濃郁強烈",
-    price: 75
-  },
-
-
-  /* =====================================================
-     鮮奶茶系列
-     戰豆奶茶也放在這裡
-     ===================================================== */
+  { id: 1, category: "紅茶系列", name: "老樹麥香", subtitle: "古早味傳統紅茶", price: 30 },
+  { id: 2, category: "紅茶系列", name: "菁玉紅茶", subtitle: "英式下午茶", price: 45 },
+  { id: 3, category: "紅茶系列", name: "蜜香紅茶", subtitle: "茶葉回甘帶有熟蜜的香氣", price: 45 },
+  { id: 4, category: "紅茶系列", name: "觀音紅茶", subtitle: "帶有微微自然風味的紅茶", price: 45 },
+  { id: 5, category: "紅茶系列", name: "紫霞仙子紅茶", subtitle: "阿薩姆基底，獨特果香，醇厚回甘", price: 50 },
+  { id: 6, category: "紅茶系列", name: "藥師皇茶", subtitle: "獨特的山林木質香氣", price: 55 },
+  { id: 7, category: "紅茶系列", name: "台茶十八號（紅玉）", subtitle: "茶香獨特，口感濃郁強烈", price: 75 },
 
   {
     id: 8,
@@ -119,9 +59,7 @@ const products = [
     subtitle: "非基改豆漿＋紅茶",
     price: 50
   }
-
 ];
-
 
 
 /* =========================================================
@@ -137,7 +75,6 @@ const sweetnessOptions = [
   "十分"
 ];
 
-
 const iceOptions = [
   "去冰",
   "微冰",
@@ -146,34 +83,23 @@ const iceOptions = [
 ];
 
 
-
 /* =========================================================
    購物車
    ========================================================= */
 
 const cart = [];
 
-
-/* =========================================================
-   購物袋
-   ========================================================= */
-
 let bag1Count = 0;
-
 let bag2Count = 0;
 
 
-
 /* =========================================================
-   DOM 快速選取
+   DOM
    ========================================================= */
 
 function qs(selector) {
-
   return document.querySelector(selector);
-
 }
-
 
 
 /* =========================================================
@@ -181,99 +107,8 @@ function qs(selector) {
    ========================================================= */
 
 function money(number) {
-
   return `$${number}`;
-
 }
-
-
-
-/* =========================================================
-   飲料圖片
-   ========================================================= */
-
-function drinkImg(name) {
-
-  const isMilk =
-    name.includes("鮮奶") ||
-    name.includes("豆奶");
-
-
-  const hue =
-    isMilk
-      ? "#ead1b2"
-      : "#9d4a2b";
-
-
-  const teaColor =
-    isMilk
-      ? "#c58b58"
-      : "#6f2d1c";
-
-
-  const svg = `
-
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="120"
-      height="140"
-    >
-
-      <rect
-        width="120"
-        height="140"
-        rx="15"
-        fill="${hue}"
-      />
-
-      <ellipse
-        cx="60"
-        cy="112"
-        rx="38"
-        ry="10"
-        fill="#0002"
-      />
-
-      <path
-        d="M35 28h50l-6 78q-19 12-38 0z"
-        fill="#fff8"
-      />
-
-      <path
-        d="M38 43h44l-4 57q-18 10-36 0z"
-        fill="${teaColor}"
-      />
-
-      <path
-        d="M43 20h35v9H43z"
-        fill="#eee"
-      />
-
-      <path
-        d="M79 25l15-18"
-        stroke="#6d4b38"
-        stroke-width="5"
-      />
-
-      <circle
-        cx="50"
-        cy="72"
-        r="3"
-        fill="#fff6"
-      />
-
-    </svg>
-
-  `;
-
-
-  return (
-    "data:image/svg+xml;charset=utf-8," +
-    encodeURIComponent(svg)
-  );
-
-}
-
 
 
 /* =========================================================
@@ -283,7 +118,6 @@ function drinkImg(name) {
 function productCard(product) {
 
   return `
-
     <article class="card">
 
       <div>
@@ -302,7 +136,6 @@ function productCard(product) {
 
       </div>
 
-
       <button
         class="choose"
         data-add="${product.id}"
@@ -312,11 +145,8 @@ function productCard(product) {
       </button>
 
     </article>
-
   `;
-
 }
-
 
 
 /* =========================================================
@@ -325,60 +155,33 @@ function productCard(product) {
 
 function render(filter = "全部") {
 
-  const blackTea =
-    qs("#blackTea");
-
-  const milkTea =
-    qs("#milkTea");
-
-  const soyTea =
-    qs("#soyTea");
-
-
-  /*
-    清空商品區
-  */
+  const blackTea = qs("#blackTea");
+  const milkTea = qs("#milkTea");
+  const soyTea = qs("#soyTea");
 
   if (blackTea) {
-
     blackTea.innerHTML = "";
-
   }
-
 
   if (milkTea) {
-
     milkTea.innerHTML = "";
-
   }
 
-
   if (soyTea) {
-
     soyTea.innerHTML = "";
-
   }
 
 
   /*
-    分類對應
-
-    戰豆奶茶現在屬於鮮奶茶系列，
-    所以不再使用 #soyTea。
+    戰豆奶茶已經放在鮮奶茶系列
+    不再使用 soyTea
   */
 
   const groups = {
-
     "紅茶系列": "#blackTea",
-
     "鮮奶茶系列": "#milkTea"
-
   };
 
-
-  /*
-    放入商品
-  */
 
   products
     .filter(
@@ -392,17 +195,12 @@ function render(filter = "全部") {
         const target =
           groups[product.category];
 
-
         const container =
           qs(target);
 
-
         if (!container) {
-
           return;
-
         }
-
 
         container.insertAdjacentHTML(
           "beforeend",
@@ -414,7 +212,7 @@ function render(filter = "全部") {
 
 
   /*
-    綁定加入購物車
+    綁定商品按鈕
   */
 
   document
@@ -435,7 +233,7 @@ function render(filter = "全部") {
 
 
   /*
-    分類按鈕 active
+    分類按鈕
   */
 
   document
@@ -448,13 +246,13 @@ function render(filter = "全部") {
       );
 
     });
-
 }
 
 
-
 /* =========================================================
-   加入購物車
+   商品選擇
+   按下「＋ 選擇」後，
+   先跳出數量 / 甜度 / 冰塊選擇
    ========================================================= */
 
 function add(id) {
@@ -469,335 +267,577 @@ function add(id) {
     return;
   }
 
-  /*
-    客人按「＋ 選擇」後，
-    先選甜度與冰度，再加入購物車。
-  */
-  openProductOptions(product);
+  showProductOptions(product);
 }
 
 
 /* =========================================================
-   商品甜度 / 冰度選擇視窗
+   商品選項視窗
    ========================================================= */
 
-function ensureProductOptionsModal() {
+function showProductOptions(product) {
 
-  if (qs("#productOptionsModal")) {
-    return qs("#productOptionsModal");
+  const oldModal =
+    document.querySelector(
+      "#productOptionsModal"
+    );
+
+  if (oldModal) {
+    oldModal.remove();
   }
 
-  const style = document.createElement("style");
 
-  style.id = "productOptionsModalStyle";
+  let quantity = 1;
 
-  style.textContent = `
-    #productOptionsModal {
-      position: fixed;
-      inset: 0;
-      z-index: 99999;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      background: rgba(0, 0, 0, 0.48);
-    }
 
-    #productOptionsModal.open {
-      display: flex;
-    }
+  const modal =
+    document.createElement(
+      "div"
+    );
 
-    #productOptionsModal .product-options-box {
-      width: min(92vw, 480px);
-      max-height: 88vh;
-      overflow-y: auto;
-      background: #fff;
-      border-radius: 24px;
-      padding: 24px;
-      box-sizing: border-box;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
-    }
 
-    #productOptionsModal .product-options-title {
-      margin: 0 0 6px;
-      font-size: 25px;
-      font-weight: 800;
-      color: #2d211d;
-    }
+  modal.id =
+    "productOptionsModal";
 
-    #productOptionsModal .product-options-price {
-      margin: 0 0 22px;
-      color: #a8322b;
-      font-size: 23px;
-      font-weight: 800;
-    }
-
-    #productOptionsModal .product-options-label {
-      display: block;
-      margin: 18px 0 8px;
-      font-size: 18px;
-      font-weight: 800;
-      color: #2d211d;
-    }
-
-    #productOptionsModal select {
-      width: 100%;
-      min-height: 52px;
-      padding: 10px 14px;
-      border: 1px solid #dccfc2;
-      border-radius: 13px;
-      background: #fff;
-      color: #2d211d;
-      font-size: 17px;
-      box-sizing: border-box;
-    }
-
-    #productOptionsModal .product-options-actions {
-      display: grid;
-      grid-template-columns: 1fr 1.4fr;
-      gap: 10px;
-      margin-top: 24px;
-    }
-
-    #productOptionsModal button {
-      min-height: 52px;
-      border-radius: 14px;
-      font-size: 17px;
-      font-weight: 800;
-      cursor: pointer;
-    }
-
-    #productOptionsModal .product-options-cancel {
-      border: 1px solid #dccfc2;
-      background: #fff;
-      color: #5b4b43;
-    }
-
-    #productOptionsModal .product-options-confirm {
-      border: 0;
-      background: #a8322b;
-      color: #fff;
-    }
-
-    @media (max-width: 480px) {
-      #productOptionsModal {
-        padding: 14px;
-      }
-
-      #productOptionsModal .product-options-box {
-        width: 100%;
-        border-radius: 22px;
-        padding: 20px;
-      }
-    }
-  `;
-
-  document.head.appendChild(style);
-
-  const modal = document.createElement("div");
-
-  modal.id = "productOptionsModal";
 
   modal.innerHTML = `
+
     <div
-      class="product-options-box"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="productOptionsTitle"
+      style="
+        position:fixed;
+        inset:0;
+        z-index:9999;
+        background:rgba(0,0,0,.55);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:18px;
+        box-sizing:border-box;
+      "
     >
-      <h2
-        id="productOptionsTitle"
-        class="product-options-title"
-      ></h2>
 
-      <p
-        id="productOptionsPrice"
-        class="product-options-price"
-      ></p>
-
-      <label
-        class="product-options-label"
-        for="productSweetnessSelect"
+      <div
+        role="dialog"
+        aria-modal="true"
+        style="
+          width:min(520px,100%);
+          max-height:90vh;
+          overflow:auto;
+          background:#fff;
+          border-radius:24px;
+          padding:24px;
+          box-shadow:0 20px 60px rgba(0,0,0,.3);
+          box-sizing:border-box;
+        "
       >
-        甜度
-      </label>
 
-      <select id="productSweetnessSelect"></select>
-
-      <label
-        class="product-options-label"
-        for="productIceSelect"
-      >
-        冰塊
-      </label>
-
-      <select id="productIceSelect"></select>
-
-      <div class="product-options-actions">
-        <button
-          type="button"
-          class="product-options-cancel"
-          id="productOptionsCancel"
+        <div
+          style="
+            display:flex;
+            justify-content:space-between;
+            align-items:flex-start;
+            gap:12px;
+            margin-bottom:20px;
+          "
         >
-          取消
-        </button>
 
-        <button
-          type="button"
-          class="product-options-confirm"
-          id="productOptionsConfirm"
+          <div>
+
+            <h2
+              style="
+                margin:0 0 6px;
+                font-size:25px;
+                color:#2b211d;
+              "
+            >
+              ${product.name}
+            </h2>
+
+            <div
+              style="
+                color:#8a756b;
+                font-size:15px;
+              "
+            >
+              ${product.subtitle}
+            </div>
+
+            <div
+              style="
+                margin-top:8px;
+                color:#a93226;
+                font-size:22px;
+                font-weight:700;
+              "
+            >
+              ${money(product.price)}／杯
+            </div>
+
+          </div>
+
+
+          <button
+            type="button"
+            data-product-options-close
+            aria-label="關閉"
+            style="
+              border:0;
+              background:#f1ebe6;
+              width:42px;
+              height:42px;
+              border-radius:50%;
+              font-size:25px;
+              cursor:pointer;
+              flex:none;
+            "
+          >
+            ×
+          </button>
+
+        </div>
+
+
+        <!-- 數量 -->
+
+        <div
+          style="
+            padding:16px;
+            background:#faf6f1;
+            border-radius:16px;
+          "
         >
-          加入購物車
-        </button>
+
+          <div
+            style="
+              font-weight:700;
+              font-size:18px;
+              color:#2b211d;
+              margin-bottom:12px;
+            "
+          >
+            數量
+          </div>
+
+
+          <div
+            style="
+              display:flex;
+              align-items:center;
+              gap:16px;
+            "
+          >
+
+            <button
+              type="button"
+              data-option-minus
+              style="
+                width:54px;
+                height:50px;
+                border:1px solid #dccfc2;
+                border-radius:12px;
+                background:#fff;
+                font-size:26px;
+                cursor:pointer;
+              "
+            >
+              −
+            </button>
+
+
+            <strong
+              data-option-quantity
+              style="
+                min-width:42px;
+                text-align:center;
+                font-size:23px;
+              "
+            >
+              1
+            </strong>
+
+
+            <button
+              type="button"
+              data-option-plus
+              style="
+                width:54px;
+                height:50px;
+                border:1px solid #dccfc2;
+                border-radius:12px;
+                background:#fff;
+                font-size:26px;
+                cursor:pointer;
+              "
+            >
+              ＋
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- 甜度 -->
+
+        <label
+          style="
+            display:block;
+            font-weight:700;
+            font-size:18px;
+            color:#2b211d;
+            margin:18px 0 8px;
+          "
+        >
+          甜度
+        </label>
+
+
+        <select
+          data-option-sweetness
+          style="
+            width:100%;
+            padding:14px;
+            box-sizing:border-box;
+            border:1px solid #dccfc2;
+            border-radius:12px;
+            background:#fff;
+            font-size:17px;
+          "
+        >
+
+          ${sweetnessOptions
+            .map(
+              value =>
+                `
+                <option
+                  value="${value}"
+                >
+                  ${value}
+                </option>
+                `
+            )
+            .join("")}
+
+        </select>
+
+
+        <!-- 冰塊 -->
+
+        <label
+          style="
+            display:block;
+            font-weight:700;
+            font-size:18px;
+            color:#2b211d;
+            margin:18px 0 8px;
+          "
+        >
+          冰塊
+        </label>
+
+
+        <select
+          data-option-ice
+          style="
+            width:100%;
+            padding:14px;
+            box-sizing:border-box;
+            border:1px solid #dccfc2;
+            border-radius:12px;
+            background:#fff;
+            font-size:17px;
+          "
+        >
+
+          ${iceOptions
+            .map(
+              value =>
+                `
+                <option
+                  value="${value}"
+                >
+                  ${value}
+                </option>
+                `
+            )
+            .join("")}
+
+        </select>
+
+
+        <!-- 按鈕 -->
+
+        <div
+          style="
+            display:flex;
+            gap:12px;
+            margin-top:24px;
+          "
+        >
+
+          <button
+            type="button"
+            data-product-options-cancel
+            style="
+              flex:1;
+              padding:15px;
+              border:1px solid #dccfc2;
+              border-radius:14px;
+              background:#fff;
+              color:#5b4a42;
+              font-size:18px;
+              font-weight:700;
+              cursor:pointer;
+            "
+          >
+            取消
+          </button>
+
+
+          <button
+            type="button"
+            data-product-options-add
+            style="
+              flex:1;
+              padding:15px;
+              border:0;
+              border-radius:14px;
+              background:#a93226;
+              color:#fff;
+              font-size:18px;
+              font-weight:700;
+              cursor:pointer;
+            "
+          >
+            加入購物車
+          </button>
+
+        </div>
+
       </div>
+
     </div>
+
   `;
 
-  document.body.appendChild(modal);
 
-  modal.addEventListener("click", event => {
-    if (event.target === modal) {
-      closeProductOptions();
-    }
-  });
-
-  qs("#productOptionsCancel").onclick = () => {
-    closeProductOptions();
-  };
-
-  return modal;
-}
+  document.body.appendChild(
+    modal
+  );
 
 
-let pendingProduct = null;
+  const quantityElement =
+    modal.querySelector(
+      "[data-option-quantity]"
+    );
 
 
-function openProductOptions(product) {
-
-  const modal = ensureProductOptionsModal();
-
-  pendingProduct = product;
-
-  const title = qs("#productOptionsTitle");
-  const price = qs("#productOptionsPrice");
-  const sweetnessSelect = qs("#productSweetnessSelect");
-  const iceSelect = qs("#productIceSelect");
-
-  if (!title || !price || !sweetnessSelect || !iceSelect) {
-    return;
-  }
-
-  title.textContent = product.name;
-  price.textContent = money(product.price);
-
-  sweetnessSelect.innerHTML = sweetnessOptions
-    .map(
-      value =>
-        `<option value="${value}" ${value === "十分" ? "selected" : ""}>${value}</option>`
-    )
-    .join("");
-
-  iceSelect.innerHTML = iceOptions
-    .map(
-      value =>
-        `<option value="${value}" ${value === "正常冰" ? "selected" : ""}>${value}</option>`
-    )
-    .join("");
-
-  modal.classList.add("open");
-}
+  const sweetnessSelect =
+    modal.querySelector(
+      "[data-option-sweetness]"
+    );
 
 
-function closeProductOptions() {
+  const iceSelect =
+    modal.querySelector(
+      "[data-option-ice]"
+    );
 
-  const modal = qs("#productOptionsModal");
-
-  if (modal) {
-    modal.classList.remove("open");
-  }
-
-  pendingProduct = null;
-}
-
-
-function confirmProductOptions() {
-
-  if (!pendingProduct) {
-    return;
-  }
-
-  const sweetnessSelect = qs("#productSweetnessSelect");
-  const iceSelect = qs("#productIceSelect");
-
-  const sweetness =
-    sweetnessSelect
-      ? sweetnessSelect.value
-      : "十分";
-
-  const ice =
-    iceSelect
-      ? iceSelect.value
-      : "正常冰";
 
   /*
-    同商品、同甜度、同冰度才合併數量。
-    不同甜度或冰度會分開顯示，避免做錯飲料。
+    更新數量顯示
   */
+
+  const updateQuantity =
+    () => {
+
+      quantityElement.textContent =
+        quantity;
+
+    };
+
+
+  /*
+    關閉視窗
+  */
+
+  const close =
+    () => {
+
+      modal.remove();
+
+    };
+
+
+  /*
+    減少數量
+  */
+
+  modal
+    .querySelector(
+      "[data-option-minus]"
+    )
+    .onclick = () => {
+
+      quantity =
+        Math.max(
+          1,
+          quantity - 1
+        );
+
+      updateQuantity();
+
+    };
+
+
+  /*
+    增加數量
+  */
+
+  modal
+    .querySelector(
+      "[data-option-plus]"
+    )
+    .onclick = () => {
+
+      quantity =
+        Math.min(
+          99,
+          quantity + 1
+        );
+
+      updateQuantity();
+
+    };
+
+
+  /*
+    關閉
+  */
+
+  modal
+    .querySelector(
+      "[data-product-options-close]"
+    )
+    .onclick = close;
+
+
+  modal
+    .querySelector(
+      "[data-product-options-cancel]"
+    )
+    .onclick = close;
+
+
+  /*
+    點背景關閉
+  */
+
+  modal.addEventListener(
+    "click",
+    event => {
+
+      if (
+        event.target ===
+        modal.firstElementChild
+      ) {
+
+        close();
+
+      }
+
+    }
+  );
+
+
+  /*
+    加入購物車
+  */
+
+  modal
+    .querySelector(
+      "[data-product-options-add]"
+    )
+    .onclick = () => {
+
+      addConfiguredProduct(
+        product,
+        quantity,
+        sweetnessSelect.value,
+        iceSelect.value
+      );
+
+      close();
+
+    };
+
+}
+
+
+/* =========================================================
+   真正加入購物車
+   相同商品＋相同甜度＋相同冰塊
+   自動合併數量
+   ========================================================= */
+
+function addConfiguredProduct(
+  product,
+  quantity,
+  sweetness,
+  ice
+) {
+
   const found =
     cart.find(
       item =>
-        item.id === pendingProduct.id &&
+        item.id === product.id &&
         item.sweetness === sweetness &&
         item.ice === ice
     );
 
+
   if (found) {
-    found.quantity += 1;
+
+    found.quantity +=
+      quantity;
+
   } else {
+
     cart.push({
+
       id:
-        pendingProduct.id,
+        product.id,
 
       name:
-        pendingProduct.name,
+        product.name,
 
       subtitle:
-        pendingProduct.subtitle,
+        product.subtitle,
 
       price:
-        pendingProduct.price,
+        product.price,
 
       quantity:
-        1,
+        quantity,
 
-      sweetness,
+      sweetness:
+        sweetness,
 
-      ice
+      ice:
+        ice
+
     });
+
   }
 
-  const productName = pendingProduct.name;
-
-  closeProductOptions();
 
   updateCart();
-  renderCart();
+
 
   toast(
-    `${productName}｜${sweetness}｜${ice} 已加入訂單`
+    `${product.name} × ${quantity} 已加入訂單`
   );
-}
 
-
-if (typeof document !== "undefined") {
-  document.addEventListener("click", event => {
-    if (
-      event.target &&
-      event.target.id === "productOptionsConfirm"
-    ) {
-      confirmProductOptions();
-    }
-  });
 }
 
 
@@ -830,18 +870,18 @@ function getDrinkCount() {
 }
 
 
-
 /* =========================================================
    依杯數計算製作時間
    =========================================================
 
-   1～2 杯    15 分鐘
-   3～4 杯    20 分鐘
-   5～6 杯    25 分鐘
-   7～8 杯    30 分鐘
-   9～10 杯   40 分鐘
-   11～15 杯  50 分鐘
-   16 杯以上  60 分鐘
+   1～2 杯     15 分鐘
+   3～4 杯     20 分鐘
+   5～6 杯     25 分鐘
+   7～8 杯     30 分鐘
+   9～10 杯    40 分鐘
+   11～15 杯   50 分鐘
+   16 杯以上   60 分鐘
+
    ========================================================= */
 
 function getPreparationMinutes() {
@@ -851,51 +891,37 @@ function getPreparationMinutes() {
 
 
   if (cups <= 2) {
-
     return 15;
-
   }
 
 
   if (cups <= 4) {
-
     return 20;
-
   }
 
 
   if (cups <= 6) {
-
     return 25;
-
   }
 
 
   if (cups <= 8) {
-
     return 30;
-
   }
 
 
   if (cups <= 10) {
-
     return 40;
-
   }
 
 
   if (cups <= 15) {
-
     return 50;
-
   }
 
 
   return 60;
-
 }
-
 
 
 /* =========================================================
@@ -914,22 +940,10 @@ function pad(number) {
 }
 
 
-
 /* =========================================================
-   判斷是否營業日
-   =========================================================
-
-   JavaScript：
-   0 = 星期日
-   1 = 星期一
-   2 = 星期二
-   3 = 星期三
-   4 = 星期四
-   5 = 星期五
-   6 = 星期六
-
-   店家：
+   判斷營業日
    週三～週日營業
+   週一、週二公休
    ========================================================= */
 
 function isBusinessDay(date) {
@@ -946,20 +960,11 @@ function isBusinessDay(date) {
 }
 
 
-
 /* =========================================================
    日期顯示
    ========================================================= */
 
 function formatDate(date) {
-
-  const month =
-    date.getMonth() + 1;
-
-
-  const day =
-    date.getDate();
-
 
   const weekdayNames = [
     "日",
@@ -972,20 +977,16 @@ function formatDate(date) {
   ];
 
 
-  const weekday =
-    weekdayNames[
-      date.getDay()
-    ];
-
-
-  return `${month}/${day}（週${weekday}）`;
+  return `
+    ${date.getMonth() + 1}/${date.getDate()}
+    （週${weekdayNames[date.getDay()]}）
+  `;
 
 }
 
 
-
 /* =========================================================
-   建立指定日期的時間
+   建立指定日期時間
    ========================================================= */
 
 function createDateTime(
@@ -1009,7 +1010,6 @@ function createDateTime(
   return result;
 
 }
-
 
 
 /* =========================================================
@@ -1040,31 +1040,21 @@ function getNextBusinessDay(
 }
 
 
-
 /* =========================================================
    取餐時間選單
-   =========================================================
 
-   規則：
+   今日：
+   依照杯數計算最早時間
 
-   ① 今天
-      → 依杯數計算最早時間
+   每 5 分鐘一個選項
 
-   ② 每天最晚 21:40
+   今日最晚取餐：
+   21:40
 
-   ③ 今天過了 21:40
-      → 不再顯示今天
+   最後下單：
+   21:30
 
-   ④ 明天開始
-      → 11:00～21:40
-
-   ⑤ 週一、週二自動跳過
-
-   ⑥ 提供未來 7 天內的營業日
-
-   ⑦ 每 5 分鐘一個選項
-
-   ⑧ 客人不能自行輸入
+   客人不能自行輸入
    ========================================================= */
 
 function updatePickupTimeOptions() {
@@ -1074,119 +1064,343 @@ function updatePickupTimeOptions() {
       '[name="pickupDateTime"]'
     );
 
-  if (!input) return;
 
-  let select = input;
-
-  if (input.tagName.toLowerCase() !== "select") {
-    select = document.createElement("select");
-    if (input.className) select.className = input.className;
-    select.id = input.id || "pickupDateTime";
-    select.name = "pickupDateTime";
-    select.required = true;
-    input.replaceWith(select);
-  }
-
-  const oldValue = select.value;
-  const now = new Date();
-
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
-
-  select.innerHTML = "";
-
-  const firstOption = document.createElement("option");
-  firstOption.value = "";
-  firstOption.textContent = "請選擇今天的取餐時間";
-  select.appendChild(firstOption);
-
-  if (!isBusinessDay(today)) {
-    firstOption.textContent = "今日公休，無法下單";
+  if (!input) {
     return;
   }
 
-  /* 最後下單時間：21:30 */
-  const orderCutoff = createDateTime(today, 21, 30);
 
-  if (now > orderCutoff) {
-    firstOption.textContent = "今日已停止接單";
-    return;
+  let select =
+    input;
+
+
+  /*
+    如果 HTML 原本是 input
+    自動轉成 select
+  */
+
+  if (
+    input.tagName.toLowerCase() !==
+    "select"
+  ) {
+
+    select =
+      document.createElement(
+        "select"
+      );
+
+
+    if (input.className) {
+
+      select.className =
+        input.className;
+
+    }
+
+
+    select.id =
+      input.id ||
+      "pickupDateTime";
+
+
+    select.name =
+      "pickupDateTime";
+
+
+    select.required =
+      true;
+
+
+    input.replaceWith(
+      select
+    );
+
   }
 
-  /* 依杯數計算最早取餐時間 */
-  const preparationMinutes = getPreparationMinutes();
 
-  let earliestToday = new Date(
-    now.getTime() + preparationMinutes * 60 * 1000
+  const oldValue =
+    select.value;
+
+
+  const now =
+    new Date();
+
+
+  const today =
+    new Date(now);
+
+
+  today.setHours(
+    0,
+    0,
+    0,
+    0
   );
 
-  /* 向上對齊 5 分鐘 */
-  const minuteRemainder = earliestToday.getMinutes() % 5;
 
-  if (minuteRemainder !== 0) {
-    earliestToday.setMinutes(
-      earliestToday.getMinutes() + (5 - minuteRemainder)
+  select.innerHTML =
+    "";
+
+
+  const firstOption =
+    document.createElement(
+      "option"
     );
-  }
 
-  earliestToday.setSeconds(0);
-  earliestToday.setMilliseconds(0);
 
-  /* 尚未到營業時間時，從 11:00 開始 */
-  const openingTime = createDateTime(today, 11, 0);
+  firstOption.value =
+    "";
 
-  if (earliestToday < openingTime) {
-    earliestToday = openingTime;
-  }
 
-  /* 今日最後取餐時間：21:40 */
-  const lastPickupTime = createDateTime(today, 21, 40);
+  firstOption.textContent =
+    "請選擇今天的取餐時間";
 
-  if (earliestToday > lastPickupTime) {
-    firstOption.textContent = "今日已無可預約取餐時間";
+
+  select.appendChild(
+    firstOption
+  );
+
+
+  /*
+    今日公休
+  */
+
+  if (
+    !isBusinessDay(today)
+  ) {
+
+    firstOption.textContent =
+      "今日公休，無法下單";
+
     return;
+
   }
 
-  const dateGroup = document.createElement("optgroup");
-  dateGroup.label = `${formatDate(today)}｜今天`;
+
+  /*
+    最後下單時間 21:30
+  */
+
+  const orderCutoff =
+    createDateTime(
+      today,
+      21,
+      30
+    );
+
+
+  if (
+    now > orderCutoff
+  ) {
+
+    firstOption.textContent =
+      "今日已停止接單";
+
+    return;
+
+  }
+
+
+  /*
+    依照杯數計算最早取餐
+  */
+
+  const preparationMinutes =
+    getPreparationMinutes();
+
+
+  let earliestToday =
+    new Date(
+      now.getTime() +
+      preparationMinutes *
+      60000
+    );
+
+
+  /*
+    向上對齊 5 分鐘
+  */
+
+  const remainder =
+    earliestToday.getMinutes() %
+    5;
+
+
+  if (
+    remainder !== 0
+  ) {
+
+    earliestToday.setMinutes(
+      earliestToday.getMinutes() +
+      (5 - remainder)
+    );
+
+  }
+
+
+  earliestToday.setSeconds(
+    0,
+    0
+  );
+
+
+  /*
+    尚未營業
+    從 11:00 開始
+  */
+
+  const openingTime =
+    createDateTime(
+      today,
+      11,
+      0
+    );
+
+
+  if (
+    earliestToday <
+    openingTime
+  ) {
+
+    earliestToday =
+      openingTime;
+
+  }
+
+
+  /*
+    今日最晚取餐 21:40
+  */
+
+  const lastPickupTime =
+    createDateTime(
+      today,
+      21,
+      40
+    );
+
+
+  if (
+    earliestToday >
+    lastPickupTime
+  ) {
+
+    firstOption.textContent =
+      "今日已無可預約取餐時間";
+
+    return;
+
+  }
+
+
+  /*
+    今天的時間群組
+  */
+
+  const dateGroup =
+    document.createElement(
+      "optgroup"
+    );
+
+
+  dateGroup.label =
+    `${formatDate(today)}｜今天`;
+
+
+  /*
+    每 5 分鐘建立一個選項
+  */
 
   for (
-    let time = new Date(earliestToday);
-    time <= lastPickupTime;
-    time.setMinutes(time.getMinutes() + 5)
-  ) {
-    const hour = time.getHours();
-    const minute = time.getMinutes();
+    let time =
+      new Date(
+        earliestToday
+      );
 
-    const option = document.createElement("option");
+    time <=
+    lastPickupTime;
+
+    time.setMinutes(
+      time.getMinutes() + 5
+    )
+  ) {
+
+    const option =
+      document.createElement(
+        "option"
+      );
+
 
     option.value =
-      `${today.getMonth() + 1}/${today.getDate()} ${pad(hour)}:${pad(minute)}`;
+      `${today.getMonth() + 1}/${today.getDate()} ${pad(time.getHours())}:${pad(time.getMinutes())}`;
+
 
     option.textContent =
-      `${pad(hour)}:${pad(minute)}`;
+      `${pad(time.getHours())}:${pad(time.getMinutes())}`;
 
-    dateGroup.appendChild(option);
-  }
 
-  select.appendChild(dateGroup);
-
-  if (oldValue) {
-    const option = Array.from(select.options).find(
-      item => item.value === oldValue
+    dateGroup.appendChild(
+      option
     );
 
-    if (option) {
-      select.value = oldValue;
-    }
   }
 
-  select.style.width = "100%";
-  select.style.padding = "12px";
-  select.style.borderRadius = "10px";
-  select.style.border = "1px solid #dccfc2";
-  select.style.background = "#fff";
-  select.style.fontSize = "16px";
+
+  select.appendChild(
+    dateGroup
+  );
+
+
+  /*
+    保留原本選擇
+  */
+
+  if (oldValue) {
+
+    const option =
+      Array
+        .from(
+          select.options
+        )
+        .find(
+          item =>
+            item.value ===
+            oldValue
+        );
+
+
+    if (option) {
+
+      select.value =
+        oldValue;
+
+    }
+
+  }
+
+
+  /*
+    樣式
+  */
+
+  select.style.width =
+    "100%";
+
+  select.style.padding =
+    "12px";
+
+  select.style.borderRadius =
+    "10px";
+
+  select.style.border =
+    "1px solid #dccfc2";
+
+  select.style.background =
+    "#fff";
+
+  select.style.fontSize =
+    "16px";
+
 }
 
 
@@ -1196,10 +1410,6 @@ function updatePickupTimeOptions() {
 
 function updateCart() {
 
-  const count =
-    getDrinkCount();
-
-
   const cartCount =
     qs("#cartCount");
 
@@ -1207,14 +1417,14 @@ function updateCart() {
   if (cartCount) {
 
     cartCount.textContent =
-      count;
+      getDrinkCount();
 
   }
 
 
   /*
-    購物車開啟時，
-    杯數改變就重新計算取餐時間。
+    購物車開啟時
+    杯數改變就重新計算取餐時間
   */
 
   const dialog =
@@ -1233,7 +1443,6 @@ function updateCart() {
 }
 
 
-
 /* =========================================================
    顯示購物車
    ========================================================= */
@@ -1245,11 +1454,13 @@ function renderCart() {
 
 
   if (!box) {
-
     return;
-
   }
 
+
+  /*
+    沒有商品
+  */
 
   if (!cart.length) {
 
@@ -1283,7 +1494,6 @@ function renderCart() {
   */
 
   box.innerHTML =
-
     cart
       .map(
         (
@@ -1292,15 +1502,14 @@ function renderCart() {
         ) =>
 
           `
-
           <div class="cart-row">
 
             <strong>
               ${item.name}
             </strong>
+
            　
             ${money(item.price)}
-
 
             <div class="cart-controls">
 
@@ -1379,7 +1588,6 @@ function renderCart() {
             </div>
 
           </div>
-
           `
       )
       .join("");
@@ -1457,7 +1665,8 @@ function renderCart() {
 
 
             if (
-              cart[index].quantity <= 0
+              cart[index].quantity <=
+              0
             ) {
 
               cart.splice(
@@ -1535,6 +1744,8 @@ function renderCart() {
             cart[index].sweetness =
               select.value;
 
+            renderCart();
+
           };
 
       }
@@ -1564,13 +1775,14 @@ function renderCart() {
             cart[index].ice =
               select.value;
 
+            renderCart();
+
           };
 
       }
     );
 
 }
-
 
 
 /* =========================================================
@@ -1610,7 +1822,6 @@ if (cartButton) {
 }
 
 
-
 /* =========================================================
    關閉購物車
    ========================================================= */
@@ -1637,7 +1848,6 @@ if (closeCart) {
     };
 
 }
-
 
 
 /* =========================================================
@@ -1667,7 +1877,6 @@ if (cartDialog) {
   );
 
 }
-
 
 
 /* =========================================================
@@ -1738,7 +1947,6 @@ function changeBag(
 }
 
 
-
 /* =========================================================
    送出訂單
    ========================================================= */
@@ -1771,14 +1979,18 @@ if (orderForm) {
 
 
       /*
-        今日最後下單時間：21:30
+        今日最後下單時間 21:30
       */
 
-      const currentTime = new Date();
+      const currentTime =
+        new Date();
 
-      const currentDate = new Date(
-        currentTime
-      );
+
+      const currentDate =
+        new Date(
+          currentTime
+        );
+
 
       currentDate.setHours(
         0,
@@ -1787,15 +1999,18 @@ if (orderForm) {
         0
       );
 
-      const orderCutoffTime =
+
+      const cutoff =
         createDateTime(
           currentDate,
           21,
           30
         );
 
+
       if (
-        currentTime > orderCutoffTime
+        currentTime >
+        cutoff
       ) {
 
         toast(
@@ -1808,7 +2023,7 @@ if (orderForm) {
 
 
       /*
-        重新計算一次取餐時間
+        重新計算取餐時間
       */
 
       updatePickupTimeOptions();
@@ -1888,22 +2103,6 @@ if (orderForm) {
 
 
       /*
-        杯數
-      */
-
-      const cups =
-        getDrinkCount();
-
-
-      /*
-        製作時間
-      */
-
-      const preparationMinutes =
-        getPreparationMinutes();
-
-
-      /*
         訂單資料
       */
 
@@ -1954,14 +2153,12 @@ if (orderForm) {
         bag2Count,
 
 
-        /*
-          額外資料
-        */
+        preparationMinutes:
+          getPreparationMinutes(),
 
-        preparationMinutes,
 
         drinkCount:
-          cups
+          getDrinkCount()
 
       };
 
@@ -1972,7 +2169,8 @@ if (orderForm) {
 
       if (result) {
 
-        result.className = "";
+        result.className =
+          "";
 
         result.textContent =
           "送出中…";
@@ -2034,7 +2232,6 @@ if (orderForm) {
           result.innerHTML =
 
             `
-
             訂單已送出！
 
             <br>
@@ -2050,7 +2247,6 @@ if (orderForm) {
             $${data.total || 0}
 
             ，請到店取餐並現場付款。
-
             `;
 
         }
@@ -2147,7 +2343,6 @@ if (orderForm) {
 }
 
 
-
 /* =========================================================
    Toast
    ========================================================= */
@@ -2188,7 +2383,6 @@ function toast(text) {
 }
 
 
-
 /* =========================================================
    分類按鈕
    ========================================================= */
@@ -2213,19 +2407,15 @@ document
   );
 
 
-
 /* =========================================================
    初始化商品
    ========================================================= */
 
 render();
 
-
 updateCart();
 
-
 renderCart();
-
 
 
 /* =========================================================
@@ -2248,8 +2438,8 @@ function initializePickupTimeField() {
 
 
   /*
-    如果還是 input，
-    改成 select。
+    如果 HTML 原本是 input
+    改成 select
   */
 
   if (
@@ -2299,10 +2489,6 @@ function initializePickupTimeField() {
   }
 
 
-  /*
-    先建立選單
-  */
-
   updatePickupTimeOptions();
 
 }
@@ -2311,18 +2497,12 @@ function initializePickupTimeField() {
 initializePickupTimeField();
 
 
-
 /* =========================================================
    每分鐘重新計算取餐時間
    ========================================================= */
 
 setInterval(
   () => {
-
-    /*
-      只有購物車有飲料時，
-      才需要重新計算。
-    */
 
     if (
       cart.length > 0
