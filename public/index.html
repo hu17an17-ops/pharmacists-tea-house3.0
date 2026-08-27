@@ -34,7 +34,6 @@
 </header>
 
 
-
 <main>
 
 
@@ -47,7 +46,6 @@
     >
       <span>⌖</span>
     </div>
-
 
 
     <div class="pickup-copy">
@@ -77,14 +75,12 @@
     </div>
 
 
-
     <div
       class="store-mark"
       aria-hidden="true"
     >
 
       <span class="store-roof"></span>
-
       <span class="store-body"></span>
 
     </div>
@@ -161,24 +157,6 @@
   </section>
 
 
-
-  <section>
-
-
-    <h2 class="section-title">
-      戰豆奶茶
-    </h2>
-
-
-    <div
-      id="soyTea"
-      class="grid"
-    ></div>
-
-
-  </section>
-
-
 </main>
 
 
@@ -224,29 +202,23 @@
     </button>
 
 
-
     <h2>
       確認訂單
     </h2>
 
 
-
     <div id="cartItems"></div>
 
 
-
     <div class="total">
-
 
       <span>
         合計
       </span>
 
-
       <strong id="cartTotal">
         $0
       </strong>
-
 
     </div>
 
@@ -260,7 +232,6 @@
       <label>
 
         姓名
-
 
         <input
           name="name"
@@ -278,7 +249,6 @@
       <label>
 
         電話
-
 
         <input
           name="phone"
@@ -298,18 +268,12 @@
 
         取餐時間
 
-
-        <select
-          id="pickupDateTime"
+        <input
           name="pickupDateTime"
           required
+          maxlength="50"
+          placeholder="例如：11/13 17:20"
         >
-
-          <option value="">
-            請選擇取餐時間
-          </option>
-
-        </select>
 
       </label>
 
@@ -332,7 +296,6 @@
 
         溫馨提醒：線上預訂會直接開立發票，如訂購杯數較多，製作時間較長，
         請提前訂購或來電詢問，謝謝。
-
 
       </div>
 
@@ -430,13 +393,11 @@
 
         備註
 
-
         <textarea
           name="note"
           maxlength="300"
           placeholder="例如：統編、其他需求"
         ></textarea>
-
 
       </label>
 
@@ -497,6 +458,7 @@
       "
     >
 
+
       <div
         style="
           font-size:22px;
@@ -507,6 +469,7 @@
       >
         📸 請立即截圖或保存此訂單畫面！
       </div>
+
 
 
       <div
@@ -520,20 +483,19 @@
         到店取餐時，請向店員出示您的
 
         <strong style="color:#963028;">
-          訂單編號
+           訂單編號
         </strong>。
 
-
         <br>
-
 
         並依訂單編號到店取餐，
 
         <strong>
-          現場付款。
+           現場付款。
         </strong>
 
       </div>
+
 
 
       <div
@@ -570,18 +532,6 @@
 
 
 
-<!--
-  ============================================================
-  載入主要 JavaScript
-  ============================================================
-  
-  取餐時間現在完全交給 app.js 控制。
-  
-  HTML 不再另外建立取餐時間，
-  避免與 app.js 的新邏輯互相覆蓋。
-  ============================================================
--->
-
 <script src="/app.js"></script>
 
 
@@ -605,40 +555,21 @@
 
 (function () {
 
-  const result =
-    document.getElementById("result");
+  const result = document.getElementById("result");
+
+  const reminder = document.getElementById("orderSaveReminder");
 
 
-  const reminder =
-    document.getElementById(
-      "orderSaveReminder"
-    );
-
-
-  if (
-    !result ||
-    !reminder
-  ) {
-
+  if (!result || !reminder) {
     return;
-
   }
 
 
   function checkOrderResult() {
 
-    const text =
-      (
-        result.innerText ||
-        ""
-      ).trim();
+    const text = (result.innerText || "").trim();
 
-
-    const html =
-      (
-        result.innerHTML ||
-        ""
-      ).trim();
+    const html = (result.innerHTML || "").trim();
 
 
     /*
@@ -661,31 +592,28 @@
 
     if (hasOrder) {
 
-      reminder.style.display =
-        "block";
+      reminder.style.display = "block";
 
     } else {
 
-      reminder.style.display =
-        "none";
+      reminder.style.display = "none";
 
     }
 
   }
 
 
+
   /*
     監看 app.js 是否更新 #result
   */
 
-  const observer =
-    new MutationObserver(
-      function () {
+  const observer = new MutationObserver(function () {
 
-        checkOrderResult();
+    checkOrderResult();
 
-      }
-    );
+  });
+
 
 
   observer.observe(
@@ -696,6 +624,7 @@
       characterData: true
     }
   );
+
 
 
   /*
