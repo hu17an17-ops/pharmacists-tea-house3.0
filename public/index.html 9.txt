@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#963028"
+  >
+
+  <title>藥師的私房紅茶｜線上點餐</title>
+
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+
+<body>
+
+
+<header class="hero">
+
+  <img
+    class="hero-banner"
+    src="/hero-banner.jpg"
+    alt="藥師的私房紅茶｜營業時間與到店自取資訊"
+  >
+
+</header>
+
+
+<main>
+
+
+  <section class="pickup">
+
+
+    <div
+      class="pickup-icon"
+      aria-hidden="true"
+    >
+      <span>⌖</span>
+    </div>
+
+
+    <div class="pickup-copy">
+
+
+      <div class="pickup-title-row">
+
+        <h2>到店自取</h2>
+
+        <span class="pickup-badge">
+          僅收現金
+        </span>
+
+      </div>
+
+
+      <p>
+        700 臺南市中西區小西門里府前路一段373號
+      </p>
+
+
+      <a href="tel:062135250">
+        06-2135250
+      </a>
+
+
+    </div>
+
+
+    <div
+      class="store-mark"
+      aria-hidden="true"
+    >
+
+      <span class="store-roof"></span>
+      <span class="store-body"></span>
+
+    </div>
+
+
+  </section>
+
+
+
+  <nav
+    class="tabs"
+    aria-label="商品分類"
+  >
+
+
+    <button
+      class="active"
+      data-filter="全部"
+    >
+      全部
+    </button>
+
+
+    <button
+      data-filter="紅茶系列"
+    >
+      紅茶系列
+    </button>
+
+
+    <button
+      data-filter="鮮奶茶系列"
+    >
+      鮮奶茶系列
+    </button>
+
+
+  </nav>
+
+
+
+  <section>
+
+
+    <h2 class="section-title">
+      紅茶系列
+    </h2>
+
+
+    <div
+      id="blackTea"
+      class="grid"
+    ></div>
+
+
+  </section>
+
+
+
+  <section>
+
+
+    <h2 class="section-title">
+      鮮奶茶系列
+    </h2>
+
+
+    <div
+      id="milkTea"
+      class="grid"
+    ></div>
+
+
+  </section>
+
+
+</main>
+
+
+
+<button
+  id="cartButton"
+  class="cart-button"
+  aria-label="查看訂單"
+>
+
+
+  <span class="cart-icon">
+    🛒
+  </span>
+
+
+  <b id="cartCount">
+    0
+  </b>
+
+
+  <span>
+    查看訂單
+  </span>
+
+
+</button>
+
+
+
+<dialog id="cartDialog">
+
+
+  <div class="dialog-inner">
+
+
+    <button
+      class="close"
+      id="closeCart"
+      aria-label="關閉"
+    >
+      ×
+    </button>
+
+
+    <h2>
+      確認訂單
+    </h2>
+
+
+    <div id="cartItems"></div>
+
+
+    <div class="total">
+
+      <span>
+        合計
+      </span>
+
+      <strong id="cartTotal">
+        $0
+      </strong>
+
+    </div>
+
+
+
+    <form id="orderForm">
+
+
+      <!-- 姓名 -->
+
+      <label>
+
+        姓名
+
+        <input
+          name="name"
+          required
+          maxlength="50"
+          placeholder="請輸入姓名"
+        >
+
+      </label>
+
+
+
+      <!-- 電話 -->
+
+      <label>
+
+        電話
+
+        <input
+          name="phone"
+          required
+          maxlength="30"
+          inputmode="tel"
+          placeholder="請輸入手機或電話"
+        >
+
+      </label>
+
+
+
+      <!-- 取餐時間 -->
+
+      <label>
+
+        取餐時間
+
+        <input
+          name="pickupDateTime"
+          required
+          maxlength="50"
+          placeholder="例如：11/13 17:20"
+        >
+
+      </label>
+
+
+
+      <!-- 取餐時間說明 -->
+
+      <div
+        style="
+          margin:-4px 0 12px;
+          padding:10px 12px;
+          background:#fff8ef;
+          border:1px solid #ead8c6;
+          border-radius:10px;
+          color:#7a675b;
+          font-size:14px;
+          line-height:1.6;
+        "
+      >
+
+        溫馨提醒：線上預訂會直接開立發票，如訂購杯數較多，製作時間較長，
+        請提前訂購或來電詢問，謝謝。
+
+      </div>
+
+
+
+      <!-- 購物袋 -->
+
+      <label>
+        購物袋
+      </label>
+
+
+
+      <div class="bag-option">
+
+
+        <span>
+
+          1 杯袋
+
+          <small>
+            $1／個
+          </small>
+
+        </span>
+
+
+        <button
+          type="button"
+          onclick="changeBag('bag1',-1)"
+        >
+          −
+        </button>
+
+
+        <span id="bag1Count">
+          0
+        </span>
+
+
+        <button
+          type="button"
+          onclick="changeBag('bag1',1)"
+        >
+          ＋
+        </button>
+
+
+      </div>
+
+
+
+      <div class="bag-option">
+
+
+        <span>
+
+          2～8 杯袋
+
+          <small>
+            $2／個
+          </small>
+
+        </span>
+
+
+        <button
+          type="button"
+          onclick="changeBag('bag2',-1)"
+        >
+          −
+        </button>
+
+
+        <span id="bag2Count">
+          0
+        </span>
+
+
+        <button
+          type="button"
+          onclick="changeBag('bag2',1)"
+        >
+          ＋
+        </button>
+
+
+      </div>
+
+
+
+      <!-- 備註 -->
+
+      <label>
+
+        備註
+
+        <textarea
+          name="note"
+          maxlength="300"
+          placeholder="例如：統編、其他需求"
+        ></textarea>
+
+      </label>
+
+
+
+      <!-- 送出 -->
+
+      <button
+        class="submit"
+        type="submit"
+      >
+        送出訂單
+      </button>
+
+
+    </form>
+
+
+
+    <p class="cash-note">
+      送出後請依訂單編號到店取餐，現場付款。
+    </p>
+
+
+
+    <!--
+      ==========================================================
+      訂單結果
+      ==========================================================
+      這裡保留原本的 result。
+      app.js 原本的訂單結果會繼續顯示在這裡。
+    -->
+
+    <div id="result"></div>
+
+
+
+    <!--
+      ==========================================================
+      新增：訂單截圖／保存提醒
+      ==========================================================
+      不修改原本訂單結果，
+      只在訂單送出後顯示這個提醒。
+    -->
+
+    <div
+      id="orderSaveReminder"
+      style="
+        display:none;
+        margin-top:20px;
+        padding:20px 18px;
+        background:#fff7e8;
+        border:3px solid #963028;
+        border-radius:18px;
+        color:#4b3029;
+        box-shadow:0 6px 18px rgba(0,0,0,.10);
+        text-align:left;
+      "
+    >
+
+
+      <div
+        style="
+          font-size:22px;
+          font-weight:800;
+          margin-bottom:12px;
+          color:#963028;
+        "
+      >
+        📸 請立即截圖或保存此訂單畫面！
+      </div>
+
+
+
+      <div
+        style="
+          font-size:17px;
+          line-height:1.8;
+          font-weight:600;
+        "
+      >
+
+        到店取餐時，請向店員出示您的
+
+        <strong style="color:#963028;">
+           訂單編號
+        </strong>。
+
+        <br>
+
+        並依訂單編號到店取餐，
+
+        <strong>
+           現場付款。
+        </strong>
+
+      </div>
+
+
+
+      <div
+        style="
+          margin-top:14px;
+          padding-top:14px;
+          border-top:1px solid #dfc9ad;
+          font-size:14px;
+          line-height:1.6;
+          color:#765f55;
+        "
+      >
+
+        ⚠️ 為避免忘記訂單編號，
+        建議現在就將此畫面截圖或保存。
+
+      </div>
+
+
+    </div>
+
+
+  </div>
+
+
+</dialog>
+
+
+
+<div
+  id="toast"
+  class="toast"
+></div>
+
+
+
+<script src="/app.js"></script>
+
+
+
+<!--
+  ============================================================
+  新增功能：
+  監看原本的 #result
+
+  app.js 送出訂單後，只要 #result 裡面出現訂單結果，
+  就會自動顯示「請截圖或保存」提醒。
+
+  不會修改原本的訂單內容。
+  不會修改商品。
+  不會修改購物車。
+  不會修改送單流程。
+  ============================================================
+-->
+
+<script>
+
+(function () {
+
+  const result = document.getElementById("result");
+
+  const reminder = document.getElementById("orderSaveReminder");
+
+
+  if (!result || !reminder) {
+    return;
+  }
+
+
+  function checkOrderResult() {
+
+    const text = (result.innerText || "").trim();
+
+    const html = (result.innerHTML || "").trim();
+
+
+    /*
+      只要原本的 result 有訂單內容，
+      就顯示提醒。
+
+      使用多個關鍵字判斷，
+      避免頁面一開始就顯示。
+    */
+
+    const hasOrder =
+      text.length > 0 &&
+      (
+        text.includes("訂單") ||
+        text.includes("取餐") ||
+        text.includes("合計") ||
+        html.length > 20
+      );
+
+
+    if (hasOrder) {
+
+      reminder.style.display = "block";
+
+    } else {
+
+      reminder.style.display = "none";
+
+    }
+
+  }
+
+
+
+  /*
+    監看 app.js 是否更新 #result
+  */
+
+  const observer = new MutationObserver(function () {
+
+    checkOrderResult();
+
+  });
+
+
+
+  observer.observe(
+    result,
+    {
+      childList: true,
+      subtree: true,
+      characterData: true
+    }
+  );
+
+
+
+  /*
+    初始檢查
+  */
+
+  checkOrderResult();
+
+
+})();
+
+</script>
+
+
+</body>
+</html>
