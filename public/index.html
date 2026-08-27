@@ -181,10 +181,20 @@
       padding: 0 14px 48px;
     }
 
+    /* =====================================================
+       LINE Gate：單張手機版品牌首頁
+       ===================================================== */
+
+    body.gate-mode main {
+      max-width: none;
+      padding: 0;
+    }
+
     .line-gate {
+      width: 100%;
       min-height: 100vh;
-      padding: 0 0 34px;
-      margin: 0 auto;
+      margin: 0;
+      padding: 0;
       background: transparent;
       border: 0;
       border-radius: 0;
@@ -192,90 +202,74 @@
       text-align: center;
     }
 
-    .gate-brand-image {
+    .line-gate-single {
+      position: relative;
       width: 100%;
-      max-width: 920px;
+      max-width: 480px;
       margin: 0 auto;
-      border-radius: 0 0 26px 26px;
-      object-fit: cover;
+      line-height: 0;
+      overflow: hidden;
     }
 
-    .gate-card {
-      width: min(100%, 720px);
-      margin: -2px auto 0;
-      padding: 22px 22px 26px;
-      background: rgba(255, 255, 255, 0.92);
-      border: 1px solid rgba(120, 90, 55, 0.14);
-      border-radius: 24px;
-      box-shadow: 0 12px 34px rgba(92, 67, 35, 0.12);
-    }
-
-    .gate-character {
-      width: min(100%, 520px);
-      margin: 0 auto 10px;
-      border-radius: 20px;
-    }
-
-    .line-gate-text {
-      margin: 8px auto 22px;
-      max-width: 600px;
-      color: #654a35;
-      font-size: 16px;
-      line-height: 1.9;
-      letter-spacing: 0.02em;
-    }
-
-    .line-login-button {
+    .line-gate-single-image {
+      display: block;
       width: 100%;
-      max-width: 600px;
-      min-height: 60px;
+      height: auto;
+      margin: 0;
+    }
+
+    /*
+     * 圖片本身已經包含「連結 LINE 開始點餐」按鈕，
+     * 這個透明按鈕只負責接住點擊，不再重複顯示文字。
+     */
+    .line-gate-single-button {
+      position: absolute;
+      left: 9%;
+      bottom: 10%;
+      width: 82%;
+      height: 8.5%;
+      margin: 0;
+      padding: 0;
       border: 0;
       border-radius: 16px;
-      background: #b51f25;
-      color: #fff;
-      font-size: 19px;
-      font-weight: 900;
-      letter-spacing: 0.04em;
-      box-shadow: 0 8px 20px rgba(181, 31, 37, 0.22);
+      background: transparent;
+      color: transparent;
+      font-size: 0;
+      line-height: 0;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    .line-login-button:hover {
-      background: #9f191f;
-    }
-
-    .line-login-button:active {
-      transform: translateY(1px);
+    .line-gate-single-button:focus-visible {
+      outline: 3px solid rgba(181, 31, 37, 0.55);
+      outline-offset: 2px;
     }
 
     @media (max-width: 600px) {
       body.gate-mode main {
-        padding: 0 10px 28px;
+        width: 100%;
+        max-width: 100%;
+        padding: 0;
+        margin: 0;
       }
 
-      .gate-brand-image {
-        border-radius: 0 0 18px 18px;
+      .line-gate-single {
+        width: 100vw;
+        max-width: 100vw;
+        min-height: 100vh;
       }
 
-      .gate-card {
-        padding: 12px 10px 18px;
-        border-radius: 20px;
+      .line-gate-single-image {
+        width: 100vw;
+        max-width: none;
+        height: auto;
       }
 
-      .gate-character {
-        margin-bottom: 4px;
-        border-radius: 14px;
-      }
-
-      .line-gate-text {
-        font-size: 15px;
-        line-height: 1.75;
-        margin-bottom: 16px;
-      }
-
-      .line-login-button {
-        min-height: 56px;
-        font-size: 18px;
-        border-radius: 14px;
+      .line-gate-single-button {
+        left: 8.5%;
+        width: 83%;
+        bottom: 9.5%;
+        height: 9%;
       }
     }
 
@@ -983,34 +977,20 @@
 
       <div class="line-gate">
 
-        <img
-          class="gate-brand-image"
-          src="/tea-header.webp"
-          alt="藥師的私房紅茶｜線上預訂"
-        >
-
-        <div class="gate-card">
+        <div class="line-gate-single">
 
           <img
-            class="gate-character"
-            src="/pharmacist.webp"
-            alt="藥師的私房紅茶角色"
+            class="line-gate-single-image"
+            src="/assets/line-gate.png"
+            alt="藥師的私房紅茶｜線上預訂｜連結 LINE 開始點餐"
           >
-
-          <p
-            class="line-gate-text"
-          >
-            為了讓我們可以確認您的訂單，並在需要時聯絡您，<br>
-            點餐前需要先連結 LINE。
-          </p>
 
           <button
             id="lineLoginButton"
-            class="line-login-button"
+            class="line-gate-single-button"
             type="button"
-          >
-            連結 LINE 開始點餐
-          </button>
+            aria-label="連結 LINE 開始點餐"
+          ></button>
 
         </div>
 
