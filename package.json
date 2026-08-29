@@ -1,12 +1,13 @@
 {
-  "name": "pharmacists-tea-house-ordering",
+  "name": "pharmacists-tea-house",
   "version": "1.0.0",
   "private": true,
-  "type": "commonjs",
+  "description": "藥師的私房紅茶 LINE Webhook / Render server",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=18"
   }
 }
