@@ -1,13 +1,1 @@
-{
-  "name": "pharmacists-tea-house",
-  "version": "1.0.0",
-  "private": true,
-  "description": "藥師的私房紅茶 LINE Webhook / Render server",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "engines": {
-    "node": ">=18"
-  }
-}
+{"name":"pharmacists-tea-house","version":"1.0.0","private":true,"description":"藥師的私房紅茶｜LINE Webhook + 線上點餐","main":"server.js","scripts":{"start":"node server.js"},"engines":{"node":">=18"}}
