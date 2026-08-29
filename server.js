@@ -269,58 +269,44 @@ function resolveOrderNumber(value){
     : 0;
 }
 
-async function telegram(method,data){
-  const token=
-    String(
-      process.env.TELEGRAM_BOT_TOKEN||''
-    ).trim();
+async function linePush(text,to){
+  const token=String(process.env.LINE_CHANNEL_ACCESS_TOKEN||'').trim();
+  const recipient=String(to||'').trim();
 
-  if(!token){
+  if(!token||!recipient){
+    return {skipped:true,reason:'未設定 LINE_CHANNEL_ACCESS_TOKEN 或收件人'};
+  }
+
+  const r=await fetch('https://api.line.me/v2/bot/message/push',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      Authorization:`Bearer ${token}`
+    },
+    body:JSON.stringify({
+      to:recipient,
+      messages:[{type:'text',text:String(text).slice(0,5000)}]
+    })
+  });
+
+  const raw=await r.text();
+  let data=null;
+  try{data=raw?JSON.parse(raw):null;}catch{data=raw;}
+
+  if(!r.ok){
     throw Error(
-      '沒有設定 TELEGRAM_BOT_TOKEN'
+      data?.message||
+      data?.details?.[0]?.message||
+      `LINE API ${r.status}`
     );
   }
 
-  const r=
-    await fetch(
-      `https://api.telegram.org/bot${token}/${method}`,
-      {
-        method:'POST',
-        headers:{
-          'Content-Type':
-            'application/json'
-        },
-        body:
-          JSON.stringify(data)
-      }
-    );
-
-  const x=await r.json();
-
-  if(!r.ok||!x.ok){
-    throw Error(
-      x.description||
-      `Telegram API ${r.status}`
-    );
-  }
-
-  return x.result;
+  return {skipped:false,ok:true};
 }
 
-async function notify(order){
-  const chat=
-    String(
-      process.env.TELEGRAM_CHAT_ID||''
-    ).trim();
-
-  if(!chat){
-    throw Error(
-      '沒有設定 TELEGRAM_CHAT_ID'
-    );
-  }
-
+function buildLineOrderMessage(order,title='🔔 新訂單通知'){
   const a=[
-    '🔔 新訂單通知',
+    title,
     '',
     `訂單編號：${order.id}`,
     `姓名：${order.customer.name}`,
@@ -330,87 +316,64 @@ async function notify(order){
     '【訂購內容】'
   ];
 
-  for(
-    const i of order.items||[]
-  ){
-    let s=
-      `${i.name||''} × ${num(i.quantity)}`;
-
-    if(
-      String(i.sweetness||'').trim()
-    ){
-      s+=
-        `｜甜度：${i.sweetness}`;
-    }
-
-    if(
-      String(i.ice||'').trim()
-    ){
-      s+=
-        `｜冰塊：${i.ice}`;
-    }
-
+  for(const i of order.items||[]){
+    let s=`${i.name||''} × ${num(i.quantity)}`;
+    if(String(i.sweetness||'').trim()) s+=`｜甜度：${i.sweetness}`;
+    if(String(i.ice||'').trim()) s+=`｜冰塊：${i.ice}`;
     a.push(s);
   }
 
-  const b1=num(order.bag1Count);
-  const b2=num(order.bag2Count);
-
+  const b1=num(order.bag1Count), b2=num(order.bag2Count);
   if(b1||b2){
-    a.push(
-      '',
-      '【購物袋】'
-    );
-
-    if(b1){
-      a.push(
-        `1 杯袋 × ${b1}`
-      );
-    }
-
-    if(b2){
-      a.push(
-        `2～8 杯袋 × ${b2}`
-      );
-    }
+    a.push('', '【購物袋】');
+    if(b1) a.push(`1 杯袋 × ${b1}`);
+    if(b2) a.push(`2～8 杯袋 × ${b2}`);
   }
 
-  if(
-    String(
-      order.customer.note||''
-    ).trim()
-  ){
-    a.push(
-      '',
-      `備註：${order.customer.note}`
-    );
+  if(String(order.customer.note||'').trim()) a.push('', `備註：${order.customer.note}`);
+  if(String(order.customer.invoiceNumber||'').trim()) a.push(`統一編號：${order.customer.invoiceNumber}`);
+
+  a.push('', `💰 合計：$${order.total}`, '', '💵 付款方式：現金');
+  return a.join('\n');
+}
+
+async function verifyLineIdToken(idToken){
+  const token=String(idToken||'').trim();
+  const channelId=String(process.env.LINE_CHANNEL_ID||'2011294905').trim();
+  if(!token) return null;
+
+  const r=await fetch('https://api.line.me/oauth2/v2.1/verify',{
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:new URLSearchParams({id_token:token,client_id:channelId}).toString()
+  });
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok||!data.sub) throw Error(data.error_description||`LINE ID Token 驗證失敗 (${r.status})`);
+  return data;
+}
+
+async function sendLineOrderNotifications(order,lineUserId){
+  const adminUserId=String(process.env.LINE_ADMIN_USER_ID||'').trim();
+  const message=buildLineOrderMessage(order,'🔔 新訂單通知');
+  const customerMessage=buildLineOrderMessage(order,'✅ 訂單已成立');
+
+  const results={admin:false,customer:false};
+
+  if(adminUserId){
+    await linePush(message,adminUserId);
+    results.admin=true;
+  }else{
+    console.warn('未設定 LINE_ADMIN_USER_ID，略過店家 LINE 通知');
   }
 
-  if(
-    String(
-      order.customer.invoiceNumber||''
-    ).trim()
-  ){
-    a.push(
-      `統一編號：${order.customer.invoiceNumber}`
-    );
+  if(lineUserId){
+    await linePush(customerMessage,lineUserId);
+    results.customer=true;
+  }else{
+    console.warn('本次訂單沒有有效的 LINE User ID，略過客人 LINE 通知');
   }
 
-  a.push(
-    '',
-    `💰 合計：$${order.total}`,
-    '',
-    '💵 付款方式：現金'
-  );
-
-  await telegram(
-    'sendMessage',
-    {
-      chat_id:chat,
-      text:
-        a.join('\n').slice(0,4000)
-    }
-  );
+  return results;
 }
 
 function normalize(row){
@@ -1235,10 +1198,10 @@ service:
 supabase:
 hasSupabase(),
 
-telegram:
+line:
 Boolean(
-process.env.TELEGRAM_BOT_TOKEN&&
-process.env.TELEGRAM_CHAT_ID
+process.env.LINE_CHANNEL_ACCESS_TOKEN&&
+process.env.LINE_ADMIN_USER_ID
 )
 }
 );
@@ -1491,17 +1454,19 @@ e
 
 }
 
+let lineUserId='';
 try{
-
-await notify(order);
-
+  const verified=await verifyLineIdToken(b.lineIdToken);
+  lineUserId=String(verified?.sub||'').trim();
 }catch(e){
+  if(b.lineIdToken) console.error('LINE 客人身分驗證失敗：',e.message);
+}
 
-console.error(
-'Telegram 通知失敗',
-e.message
-);
-
+try{
+  const lineResult=await sendLineOrderNotifications(order,lineUserId);
+  console.log('LINE 通知結果：',lineResult);
+}catch(e){
+  console.error('LINE 通知失敗',e.message);
 }
 
 return send(
