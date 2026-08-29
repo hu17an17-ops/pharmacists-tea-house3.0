@@ -10,18 +10,25 @@ let lineIdToken = "";
 if (window.liff) {
   liffInitPromise = liff
     .init({ liffId: LIFF_ID })
-    .then(() => {
+    .then(async () => {
       try {
-        if (liff.isLoggedIn()) {
-          lineIdToken = liff.getIDToken() || "";
+        /*
+         * 不在 LINE 裡點餐；LIFF 只用來取得客人的 LINE 身分，
+         * 讓網站下單成功後可以把「訂單已成立」通知推回客人的 LINE。
+         */
+        if (!liff.isLoggedIn()) {
+          liff.login({ redirectUri: window.location.href });
+          return;
         }
+
+        lineIdToken = liff.getIDToken() || "";
       } catch (e) {
         console.warn("LINE LIFF 使用者資訊取得失敗：", e);
         lineIdToken = "";
       }
     })
     .catch(e => {
-      console.warn("LINE LIFF 初始化失敗，仍可正常使用一般網頁點餐：", e);
+      console.warn("LINE LIFF 初始化失敗：", e);
       lineIdToken = "";
     });
 }
