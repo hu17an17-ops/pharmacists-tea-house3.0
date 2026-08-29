@@ -1,4 +1,33 @@
 /* =========================================================
+   LINE LIFF
+   ========================================================= */
+
+const LIFF_ID = "2011294905-ICLoZzNA";
+
+let liffInitPromise = Promise.resolve();
+let lineIdToken = "";
+
+if (window.liff) {
+  liffInitPromise = liff
+    .init({ liffId: LIFF_ID })
+    .then(() => {
+      try {
+        if (liff.isLoggedIn()) {
+          lineIdToken = liff.getIDToken() || "";
+        }
+      } catch (e) {
+        console.warn("LINE LIFF 使用者資訊取得失敗：", e);
+        lineIdToken = "";
+      }
+    })
+    .catch(e => {
+      console.warn("LINE LIFF 初始化失敗，仍可正常使用一般網頁點餐：", e);
+      lineIdToken = "";
+    });
+}
+
+
+/* =========================================================
    藥師的私房紅茶｜前台 app.js
    ========================================================= */
 
@@ -2011,6 +2040,16 @@ if (orderForm) {
 
 
       /*
+        如果是從 LINE LIFF 開啟，先等 LIFF 初始化完成。
+        一般瀏覽器則直接繼續，不影響原本點餐。
+      */
+      try {
+        await liffInitPromise;
+      } catch (e) {
+        console.warn("LIFF 初始化等待失敗，繼續一般點餐流程：", e);
+      }
+
+      /*
         訂單資料
       */
 
@@ -2066,7 +2105,10 @@ if (orderForm) {
 
 
         drinkCount:
-          getDrinkCount()
+          getDrinkCount(),
+
+        lineIdToken:
+          lineIdToken || ""
 
       };
 
