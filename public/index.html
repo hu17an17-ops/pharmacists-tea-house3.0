@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+ <meta name="theme-color" content="#963028">
+ <title>藥師的私房紅茶｜線上點餐</title>
+ <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="hero">
+ <img class="hero-banner" src="/hero-banner.jpg" alt="藥師的私房紅茶｜營業時間與到店自取資訊">
+</header>
+
+
+<main>
+ <section class="pickup">
+ <div class="pickup-icon" aria-hidden="true">
+ <span>⌖</span>
+ </div>
+ <div class="pickup-copy">
+ <div class="pickup-title-row">
+ <h2>到店自取</h2>
+ <span class="pickup-badge">僅收現金</span>
+ </div>
+ <p>700 臺南市中西區小西門里府前路一段373號</p>
+ <a href="tel:062135250">06-2135250</a>
+ </div>
+ <div class="store-mark" aria-hidden="true">
+ <span class="store-roof"></span>
+ <span class="store-body"></span>
+ </div>
+ </section>
+
+
+ <nav class="tabs" aria-label="商品分類">
+ <button class="active" data-filter="全部">全部</button>
+ <button data-filter="紅茶系列">紅茶系列</button>
+ <button data-filter="鮮奶茶系列">鮮奶茶系列</button>
+ </nav>
+
+
+ <section id="blackTeaSection">
+ <h2 class="section-title">紅茶系列</h2>
+ <div id="blackTea" class="grid"></div>
+ </section>
+
+
+ <section id="milkTeaSection">
+ <h2 class="section-title">鮮奶茶系列</h2>
+ <div id="milkTea" class="grid"></div>
+ </section>
+
+</main>
+
+
+<button id="cartButton" class="cart-button" aria-label="查看訂單">
+ <span class="cart-icon">🛒</span><b id="cartCount">0</b><span>查看訂單</span>
+</button>
+
+
+<dialog id="cartDialog">
+ <div class="dialog-inner">
+ <button class="close" id="closeCart" aria-label="關閉">×</button>
+ <h2>確認訂單</h2>
+ <div id="cartItems"></div>
+ <div class="total"><span>合計</span><strong id="cartTotal">$0</strong></div>
+ <form id="orderForm">
+ <label>姓名<input name="name" required maxlength="50" placeholder="請輸入姓名"></label>
+ <label>電話<input name="phone" required maxlength="10" minlength="10" inputmode="numeric" pattern="[0-9]{10}" placeholder="請輸入手機號碼"></label>
+<label>取餐時間<select name="pickupDateTime" id="pickupDateTime" required><option value="">請選擇取餐時間</option></select></label>
+<label>購物袋</label>
+
+
+<div class="bag-option">
+ <span>1 杯袋 <small>$1／個</small></span>
+ <button type="button" onclick="changeBag('bag1',-1)">−</button>
+ <span id="bag1Count">0</span>
+ <button type="button" onclick="changeBag('bag1',1)">＋</button>
+</div>
+
+
+<div class="bag-option">
+ <span>2～8 杯袋 <small>$2／個</small></span>
+ <button type="button" onclick="changeBag('bag2',-1)">−</button>
+ <span id="bag2Count">0</span>
+ <button type="button" onclick="changeBag('bag2',1)">＋</button>
+</div>
+ <label>備註<textarea name="note" maxlength="300" placeholder="例如：統編、其他需求"></textarea></label>
+ <button class="submit" type="submit">送出訂單</button>
+ </form>
+ <p class="cash-note">送出後請依訂單編號到店取餐，現場付款。</p>
+ </div>
+</dialog>
+
+
+<div id="toast" class="toast"></div>
+
+<!-- 下單完成通知：使用原生 Dialog Top Layer，確保一定是跳出視窗，不會排在頁面最下面 -->
+<dialog id="orderSuccessModal" class="order-success-modal" aria-labelledby="orderSuccessTitle">
+  <div class="order-success-card">
+    <div class="success-check" aria-hidden="true">✓</div>
+    <h2 id="orderSuccessTitle">完成下單通知</h2>
+    <p class="success-main">您的訂單已成功送出！</p>
+    <div class="success-order-info">
+      <div><span>訂單編號</span><strong id="successOrderId">—</strong></div>
+      <div><span>取餐時間</span><strong id="successPickupTime">—</strong></div>
+      <div><span>訂單金額</span><strong id="successOrderTotal">$0</strong></div>
+    </div>
+    <p class="success-hint">請依訂單編號到店取餐，現場付款。<br>完成通知也會送到您的 LINE。</p>
+    <button type="button" id="closeSuccessModal" class="success-close">知道了</button>
+  </div>
+</dialog>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
