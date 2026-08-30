@@ -183,10 +183,13 @@ async function handleLineWebhook(req, res) {
   const events = Array.isArray(payload.events) ? payload.events : [];
   for (const event of events) {
     console.log('LINE webhook event:', {
-      type: event.type,
-      userId: event.source?.userId || undefined,
-      mode: event.mode
-    });
+  type: event.type,
+  sourceType: event.source?.type,
+  userId: event.source?.userId || undefined,
+  groupId: event.source?.groupId || undefined,
+  roomId: event.source?.roomId || undefined,
+  mode: event.mode
+});
   }
 }
 
