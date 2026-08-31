@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+ <meta name="theme-color" content="#963028">
+ <title>藥師的私房紅茶｜線上點餐</title>
+ <link rel="stylesheet" href="/style.css">
+ <style>
+  /* ===== 下單完成視窗：固定在整個手機畫面最上層，不得跑到菜單下方 ===== */
+  #orderSuccessModal.order-success-modal {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483647 !important;
+    display: none !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    padding: 18px !important;
+    box-sizing: border-box !important;
+    background: rgba(0,0,0,.52) !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: auto !important;
+  }
+
+  #orderSuccessModal.order-success-modal.show {
+    display: flex !important;
+  }
+
+  #orderSuccessModal .order-success-card {
+    position: relative !important;
+    width: min(560px, 100%) !important;
+    max-height: calc(100dvh - 36px) !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+    background: #fff !important;
+    border-radius: 28px !important;
+    padding: 28px 22px 22px !important;
+    margin: 0 !important;
+    box-shadow: 0 24px 70px rgba(0,0,0,.35) !important;
+    color: #2b211d !important;
+    isolation: isolate !important;
+  }
+
+  #orderSuccessModal .success-summary {
+    background: #eef9f1 !important;
+    border-radius: 22px !important;
+    padding: 22px 20px !important;
+    margin: 0 0 18px !important;
+  }
+
+  #orderSuccessModal .success-summary h2 {
+    margin: 0 0 14px !important;
+    color: #28643d !important;
+    font-size: clamp(28px, 7vw, 38px) !important;
+    line-height: 1.2 !important;
+    font-weight: 800 !important;
+  }
+
+  #orderSuccessModal .success-summary-line {
+    display: flex !important;
+    align-items: baseline !important;
+    gap: 6px !important;
+    margin: 6px 0 !important;
+    font-size: clamp(18px, 4.5vw, 24px) !important;
+    line-height: 1.45 !important;
+    word-break: break-word !important;
+  }
+
+  #orderSuccessModal .success-summary-line strong {
+    color: #28643d !important;
+    font-weight: 800 !important;
+  }
+
+  #orderSuccessModal .save-reminder {
+    border: 4px solid #a83229 !important;
+    border-radius: 28px !important;
+    background: #fffdf8 !important;
+    padding: 22px 20px !important;
+  }
+
+  #orderSuccessModal .save-reminder h3 {
+    margin: 0 !important;
+    color: #a83229 !important;
+    font-size: clamp(24px, 6vw, 34px) !important;
+    line-height: 1.35 !important;
+    font-weight: 800 !important;
+  }
+
+  #orderSuccessModal .save-reminder p {
+    margin: 18px 0 !important;
+    font-size: clamp(18px, 4.6vw, 23px) !important;
+    line-height: 1.65 !important;
+    font-weight: 600 !important;
+  }
+
+  #orderSuccessModal .save-reminder strong {
+    color: #a83229 !important;
+    font-weight: 800 !important;
+  }
+
+  #orderSuccessModal .reminder-divider {
+    height: 1px !important;
+    background: #ddd3c8 !important;
+    margin: 18px 0 !important;
+  }
+
+  #orderSuccessModal .reminder-warning {
+    color: #5b514b !important;
+  }
+
+  #orderSuccessModal .success-close {
+    display: block !important;
+    width: 100% !important;
+    min-height: 54px !important;
+    margin-top: 18px !important;
+    border: 0 !important;
+    border-radius: 16px !important;
+    background: #a83229 !important;
+    color: #fff !important;
+    font-size: 20px !important;
+    font-weight: 800 !important;
+  }
+
+  @media (max-width: 430px) {
+    #orderSuccessModal.order-success-modal {
+      padding: 12px !important;
+    }
+    #orderSuccessModal .order-success-card {
+      max-height: calc(100dvh - 24px) !important;
+      border-radius: 24px !important;
+      padding: 20px 14px 14px !important;
+    }
+    #orderSuccessModal .success-summary,
+    #orderSuccessModal .save-reminder {
+      border-radius: 20px !important;
+      padding: 18px 15px !important;
+    }
+  }
+ </style>
+</head>
+<body>
+<header class="hero">
+ <img class="hero-banner" src="/hero-banner.jpg" alt="藥師的私房紅茶｜營業時間與到店自取資訊">
+</header>
+
+
+<main>
+ <section class="pickup">
+ <div class="pickup-icon" aria-hidden="true">
+ <span>⌖</span>
+ </div>
+ <div class="pickup-copy">
+ <div class="pickup-title-row">
+ <h2>到店自取</h2>
+ <span class="pickup-badge">僅收現金</span>
+ </div>
+ <p>700 臺南市中西區小西門里府前路一段373號</p>
+ <a href="tel:062135250">06-2135250</a>
+ </div>
+ <div class="store-mark" aria-hidden="true">
+ <span class="store-roof"></span>
+ <span class="store-body"></span>
+ </div>
+ </section>
+
+
+ <nav class="tabs" aria-label="商品分類">
+ <button class="active" data-filter="全部">全部</button>
+ <button data-filter="紅茶系列">紅茶系列</button>
+ <button data-filter="鮮奶茶系列">鮮奶茶系列</button>
+ </nav>
+
+
+ <section id="blackTeaSection">
+ <h2 class="section-title">紅茶系列</h2>
+ <div id="blackTea" class="grid"></div>
+ </section>
+
+
+ <section id="milkTeaSection">
+ <h2 class="section-title">鮮奶茶系列</h2>
+ <div id="milkTea" class="grid"></div>
+ </section>
+
+</main>
+
+
+<button id="cartButton" class="cart-button" aria-label="查看訂單">
+ <span class="cart-icon">🛒</span><b id="cartCount">0</b><span>查看訂單</span>
+</button>
+
+
+<dialog id="cartDialog">
+ <div class="dialog-inner">
+ <button class="close" id="closeCart" aria-label="關閉">×</button>
+ <h2>確認訂單</h2>
+ <div id="cartItems"></div>
+ <div class="total"><span>合計</span><strong id="cartTotal">$0</strong></div>
+ <form id="orderForm">
+ <label>姓名<input name="name" required maxlength="50" placeholder="請輸入姓名"></label>
+ <label>電話<input name="phone" required type="tel" inputmode="numeric" autocomplete="tel" minlength="10" maxlength="10" pattern="[0-9]{10}" placeholder="請輸入10碼手機號碼"></label>
+<label>取餐時間<select name="pickupDateTime" id="pickupDateTime" required><option value="">請選擇取餐時間</option></select></label>
+<label>購物袋</label>
+
+
+<div class="bag-option">
+ <span>1 杯袋 <small>$1／個</small></span>
+ <button type="button" onclick="changeBag('bag1',-1)">−</button>
+ <span id="bag1Count">0</span>
+ <button type="button" onclick="changeBag('bag1',1)">＋</button>
+</div>
+
+
+<div class="bag-option">
+ <span>2～8 杯袋 <small>$2／個</small></span>
+ <button type="button" onclick="changeBag('bag2',-1)">−</button>
+ <span id="bag2Count">0</span>
+ <button type="button" onclick="changeBag('bag2',1)">＋</button>
+</div>
+ <label>備註<textarea name="note" maxlength="300" placeholder="例如：統編、其他需求"></textarea></label>
+ <button class="submit" type="submit">送出訂單</button>
+ </form>
+ <p class="cash-note">送出後請依訂單編號到店取餐，現場付款。</p>
+ </div>
+</dialog>
+
+
+<div id="toast" class="toast"></div>
+
+<!-- 下單完成通知：使用原生 Dialog Top Layer，確保一定是跳出視窗，不會排在頁面最下面 -->
+<div id="orderSuccessModal" class="order-success-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="orderSuccessTitle">
+  <div class="order-success-card">
+    <section class="success-summary">
+      <h2 id="orderSuccessTitle">訂單已送出！</h2>
+      <div class="success-summary-line"><span>訂單編號：</span><strong id="successOrderId">—</strong></div>
+      <div class="success-summary-line"><span>取餐時間：</span><strong id="successPickupTime">—</strong></div>
+      <div class="success-summary-line"><span>合計：</span><strong id="successOrderTotal">$0</strong></div>
+    </section>
+
+    <section class="save-reminder">
+      <h3>📸 請立即截圖或保存此訂單畫面！</h3>
+      <div class="reminder-divider"></div>
+      <p>到店取餐時，請向店員報「<strong>手機後三碼及姓氏</strong>」，以便核對餐點並現場付款（<strong>現金</strong>）。</p>
+      <div class="reminder-divider"></div>
+      <p class="reminder-warning">⚠️ 為避免忘記訂單編號，建議現在就將此畫面截圖或保存。</p>
+    </section>
+
+    <button type="button" id="closeSuccessModal" class="success-close">知道了</button>
+  </div>
+</div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="/app.js?v=20260831-cup-time-v3"></script>
+</body>
+</html>
